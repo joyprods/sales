@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Next.js build and cache
+.next/
+out/
+build/
+tsconfig.tsbuildinfo
+
+# Env files (must keep local variables private)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Clasp / Apps Script files
+.clasp.json
+/temp-clasp/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Zip files and local Excel spreadsheets
+*.zip
+*.xlsx
+*.xls
+*.csv
