@@ -120,6 +120,29 @@ export default function ClientForm() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
   const [showFssaiWarning, setShowFssaiWarning] = useState(false);
+  const [restoreMessage, setRestoreMessage] = useState('');
+
+  // Restore draft form progress if session expired previously
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('draft_client_form');
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          setForm(parsed);
+          // Set to final step so they can click submit easily
+          setCurrentStep(3);
+          localStorage.removeItem('draft_client_form');
+          setRestoreMessage('Your form progress has been restored! Please review and submit it again.');
+          setTimeout(() => {
+            setRestoreMessage('');
+          }, 8000);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to restore draft form:', err);
+    }
+  }, []);
 
   // Auto copy billing to shipping address
   useEffect(() => {
@@ -367,7 +390,12 @@ export default function ClientForm() {
       });
 
       if (res.status === 401) {
-        window.location.href = '/login';
+        try {
+          localStorage.setItem('draft_client_form', JSON.stringify(form));
+        } catch (e) {
+          console.error('Failed to save draft form:', e);
+        }
+        window.location.href = '/login?session_expired=true';
         return;
       }
 
@@ -425,6 +453,21 @@ export default function ClientForm() {
 
   return (
     <div className='max-w-4xl mx-auto space-y-8'>
+      {restoreMessage && (
+        <div className='p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300'>
+          <div className='flex items-center gap-2 font-medium'>
+            <span>✨ {restoreMessage}</span>
+          </div>
+          <button 
+            type='button'
+            onClick={() => setRestoreMessage('')} 
+            className='text-xs font-semibold hover:underline bg-transparent border-none cursor-pointer text-emerald-600 dark:text-emerald-400'
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* ── Stepper Component ────────────────────────────────────────────────── */}
       <div className='card py-5 px-6'>
         <div className='flex items-start justify-between relative'>

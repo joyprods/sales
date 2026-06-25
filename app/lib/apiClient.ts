@@ -8,6 +8,7 @@ export async function apiRequest(payload: any) {
   
   if (!API_URL) {
     console.error("Error: NEXT_PUBLIC_GAS_API_URL is not defined in the environment variables.");
+    console.log("Available NEXT_PUBLIC_ keys:", Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC_')));
     throw new Error('NEXT_PUBLIC_GAS_API_URL is missing');
   }
 

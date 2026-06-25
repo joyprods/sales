@@ -21,6 +21,16 @@ export default function LoginForm() {
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('session_expired') === 'true') {
+        setIsSessionExpired(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (showErrorModal || showForgotModal) {
@@ -107,6 +117,18 @@ export default function LoginForm() {
             Sign in to your account to manage your sales
           </p>
         </div>
+
+        {isSessionExpired && (
+          <div className='mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-300 flex items-start gap-2.5 shadow-sm'>
+            <span className='text-base shrink-0'>⚠️</span>
+            <div className='text-left space-y-1'>
+              <p className='font-bold text-amber-800 dark:text-amber-300'>Session Expired</p>
+              <p className='text-xs leading-relaxed text-amber-700/90 dark:text-amber-400/90'>
+                Your session has expired. To prevent losing your data, we saved your progress. Please log in again, and we will restore your form automatically.
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className='card space-y-6'>
           <div className='form-group'>
