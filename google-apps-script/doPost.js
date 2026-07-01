@@ -35,6 +35,15 @@ function doPost(e) {
     } else if (type === "getAreas") {
       var areas = getAreasList();
       result = { ok: true, response_data: areas };
+    } else if (type === "getActiveClientsGrouped") {
+      var clientsGrouped = getActiveClientsGrouped();
+      result = { ok: true, response_data: clientsGrouped };
+    } else if (type === "getProductPrices") {
+      var pricesData = getProductPricingData(payload.clientType, payload.clientName);
+      result = pricesData;
+    } else if (type === "saveProductPrices") {
+      var saveResult = saveProductPrices(payload.clientType, payload.clientName, payload.prices);
+      result = saveResult;
     } else {
       result = { ok: false, code: "UNKNOWN_TYPE" };
     }

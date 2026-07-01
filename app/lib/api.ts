@@ -23,3 +23,29 @@ export async function fetchAreas() {
   return result.response_data;
 }
 
+export async function fetchActiveClientsGrouped() {
+  const result = await apiRequest({
+    type: 'getActiveClientsGrouped'
+  });
+  return result.response_data;
+}
+
+export async function fetchProductPrices(clientType: string, clientName: string) {
+  const result = await apiRequest({
+    type: 'getProductPrices',
+    clientType,
+    clientName
+  });
+  return result;
+}
+
+export async function saveProductPrices(clientType: string, clientName: string, prices: Record<string, number | string>) {
+  const result = await apiRequest({
+    type: 'saveProductPrices',
+    clientType,
+    clientName,
+    prices
+  });
+  return result;
+}
+
