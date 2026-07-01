@@ -61,7 +61,8 @@ export default function SubmittingModal({
   message,
   onClose,
   title,
-  loadingTitle
+  loadingTitle,
+  messages
 }: {
   show: boolean;
   status: Status;
@@ -69,13 +70,15 @@ export default function SubmittingModal({
   onClose?: () => void;
   title?: string;
   loadingTitle?: string;
+  messages?: string[];
 }) {
-  const messages = [
+  const defaultMessages = [
     'Validating details…',
     'Adding products…',
     'Storing data…',
     'Finalizing…'
   ];
+  const activeMessages = messages || defaultMessages;
 
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
@@ -84,11 +87,11 @@ export default function SubmittingModal({
     if (status !== 'loading') return;
 
     const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % messages.length);
+      setCurrentMessageIndex((prev) => (prev + 1) % activeMessages.length);
     }, 2400);
 
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, activeMessages]);
 
   // ✅ Auto close on success
   useEffect(() => {
@@ -137,7 +140,7 @@ export default function SubmittingModal({
               </h3>
 
               <p className='text-xs text-muted-foreground text-center'>
-                {messages[currentMessageIndex]}
+                {activeMessages[currentMessageIndex]}
               </p>
             </>
           )}

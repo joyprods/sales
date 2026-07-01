@@ -574,28 +574,27 @@ function saveProductPrices(clientType, clientName, prices) {
       clientRowIdx = clientRowIdx + 2;
     }
     
-    // Read the current row of values
-    var rowValues = pricingSheet.getRange(clientRowIdx, 1, 1, lastCol).getValues()[0];
-    var newColsToAppend = [];
-    var newColAdded = false;
+    // Construct the row values array directly from request payload (skips slow read)
+    var rowValues = [];
+    rowValues.push(clientName);
     
+    var newColsToAppend = [];
+    
+    // Check if there are any new products not in headers yet
     for (var prodName in prices) {
       if (!prices.hasOwnProperty(prodName)) continue;
-      
-      var priceVal = prices[prodName];
-      var colIdx = headers.indexOf(prodName);
-      if (colIdx === -1) {
+      if (headers.indexOf(prodName) === -1) {
         headers.push(prodName);
         newColsToAppend.push(prodName);
-        colIdx = headers.length - 1;
-        newColAdded = true;
       }
-      
-      var cellVal = priceVal === "" ? "" : parseFloat(priceVal);
-      while (rowValues.length <= colIdx) {
-        rowValues.push("");
-      }
-      rowValues[colIdx] = cellVal;
+    }
+    
+    // Build row values matching headers columns
+    for (var c = 1; c < headers.length; c++) {
+      var prodName = headers[c];
+      var priceVal = prices[prodName];
+      var cellVal = (priceVal === "" || priceVal === undefined || priceVal === null) ? "" : parseFloat(priceVal);
+      rowValues.push(cellVal);
     }
     
     // Write new columns in batch if any
@@ -607,6 +606,9 @@ function saveProductPrices(clientType, clientName, prices) {
     
     // Write the entire updated row back in one batch call!
     pricingSheet.getRange(clientRowIdx, 1, 1, rowValues.length).setValues([rowValues]);
+    
+    // Clear all pricing cache for this category to reload updated prices
+    _clearCacheKey("all_pricing_data_" + clientType);
     
     return { ok: true };
   } catch (e) {

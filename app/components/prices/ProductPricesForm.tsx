@@ -384,6 +384,12 @@ export default function ProductPricesForm() {
         }
         loadingTitle="Saving Prices..."
         title="Prices Saved"
+        messages={[
+          'Validating prices...',
+          'Saving custom prices...',
+          'Writing to spreadsheet...',
+          'Finalizing...'
+        ]}
         message={submitMessage}
         onClose={() => setSubmitStatus('idle')}
       />
