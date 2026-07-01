@@ -2,51 +2,73 @@
 // Client data retrieval & insertion logic
 
 // Fetch Client Names Grouped by Sales POC
+// Fetch Client Names Grouped by Sales POC (Optimized and Cached)
 function getClientList() {
-  var config = _getSetupConfig();
-  var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
-  var sheet = ss.getSheetByName(config.clientSheetName);
-  if (!sheet) {
-    return { ok: false, code: "SHEET_NOT_FOUND" };
-  }
-  
-  var headerRow = 2; // Column headers are on row 2
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= headerRow) {
-    return {};
-  }
-  
-  var headers = sheet.getRange(headerRow, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var partyNameIdx = _findHeaderIndex(headers, "PARTY NAME");
-  var salesPocIdx = _findHeaderIndex(headers, "SALES POC");
-  
-  if (partyNameIdx === -1 || salesPocIdx === -1) {
-    return {};
-  }
-  
-  var data = sheet.getRange(headerRow + 1, 1, lastRow - headerRow, sheet.getLastColumn()).getValues();
-  
-  var clientsByPoc = {};
-  clientsByPoc["All"] = [];
-
-  for (var i = 0; i < data.length; i++) {
-    var partyName = (data[i][partyNameIdx] || "").toString().trim();
-    var salesPoc = (data[i][salesPocIdx] || "").toString().trim();
-    
-    if (!partyName) continue;
-    
-    var clientObj = { name: partyName };
-    
-    if (salesPoc) {
-      if (!clientsByPoc[salesPoc]) {
-        clientsByPoc[salesPoc] = [];
-      }
-      clientsByPoc[salesPoc].push(clientObj);
+  var cacheKey = "client_list_poc";
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
     }
-    clientsByPoc["All"].push(clientObj);
+  } catch (err) {
+    Logger.log("Cache get error for client list: " + err);
   }
-  
-  return clientsByPoc;
+
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName(config.clientSheetName);
+    if (!sheet) {
+      return { ok: false, code: "SHEET_NOT_FOUND" };
+    }
+    
+    var headerRow = 2; // Column headers are on row 2
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= headerRow) {
+      return {};
+    }
+    
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+    var partyNameIdx = _findHeaderIndex(headers, "PARTY NAME");
+    var salesPocIdx = _findHeaderIndex(headers, "SALES POC");
+    
+    if (partyNameIdx === -1) {
+      return {};
+    }
+    
+    var nameValues = sheet.getRange(headerRow + 1, partyNameIdx + 1, lastRow - headerRow, 1).getValues();
+    var salesPocValues = salesPocIdx !== -1 
+      ? sheet.getRange(headerRow + 1, salesPocIdx + 1, lastRow - headerRow, 1).getValues()
+      : null;
+    
+    var clientsByPoc = {};
+    clientsByPoc["All"] = [];
+
+    for (var i = 0; i < nameValues.length; i++) {
+      var partyName = (nameValues[i][0] || "").toString().trim();
+      var salesPoc = salesPocValues ? (salesPocValues[i][0] || "").toString().trim() : "";
+      
+      if (!partyName) continue;
+      
+      var clientObj = { name: partyName };
+      
+      if (salesPoc) {
+        if (!clientsByPoc[salesPoc]) {
+          clientsByPoc[salesPoc] = [];
+        }
+        clientsByPoc[salesPoc].push(clientObj);
+      }
+      clientsByPoc["All"].push(clientObj);
+    }
+    
+    // Cache for 30 minutes
+    _setCachedData(cacheKey, clientsByPoc, 1800);
+    return clientsByPoc;
+  } catch (e) {
+    _logError("getClientList", e, "");
+    return {};
+  }
 }
 
 // Add Client dynamically matching spreadsheet column headers
@@ -201,6 +223,7 @@ function createClient(data) {
   // Clear cached client list and row data
   try {
     _clearCacheKey("active_clients_grouped");
+    _clearCacheKey("client_list_poc");
     _clearCacheKey("pricing_clients_LOCAL");
     _clearCacheKey("pricing_clients_OUTSTATION");
   } catch (cacheErr) {
