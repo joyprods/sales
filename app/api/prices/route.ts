@@ -1,7 +1,7 @@
 // app/api/prices/route.ts
 import { NextResponse } from 'next/server';
 import { getSessionId } from '@/lib/auth';
-import { fetchActiveClientsGrouped, fetchProductPrices, saveProductPrices } from '@/lib/api';
+import { fetchActiveClientsGrouped, fetchProductPrices, saveProductPrices, fetchAllProductPrices } from '@/lib/api';
 
 export async function GET(req: Request) {
   const sessionId = await getSessionId();
@@ -22,6 +22,15 @@ export async function GET(req: Request) {
   try {
     if (action === 'getClients') {
       const data = await fetchActiveClientsGrouped();
+      return NextResponse.json(data);
+    } else if (action === 'getAllPrices') {
+      const clientType = searchParams.get('clientType');
+
+      if (!clientType) {
+        return NextResponse.json({ error: 'MISSING_PARAMS' }, { status: 400 });
+      }
+
+      const data = await fetchAllProductPrices(clientType);
       return NextResponse.json(data);
     } else if (action === 'getPrices') {
       const clientName = searchParams.get('clientName');

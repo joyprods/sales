@@ -49,3 +49,11 @@ export async function saveProductPrices(clientType: string, clientName: string, 
   return result;
 }
 
+export async function fetchAllProductPrices(clientType: string) {
+  const result = await apiRequest({
+    type: 'getAllPricingData',
+    clientType
+  });
+  return result;
+}
+

@@ -2,122 +2,93 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { 
+  MapPin, 
+  Truck, 
+  Search, 
+  Save, 
+  Info, 
+  HelpCircle 
+} from 'lucide-react';
 import SearchableSelect from '../SearchableSelect';
 import SubmittingModal from '../vendor-form/SubmittingModal';
-import { Search, Info, Save, RotateCcw, MapPin, Truck, HelpCircle } from 'lucide-react';
-
-interface ProductPrice {
-  name: string;
-  price: number | null;
-  isActive: boolean;
-}
 
 export default function ProductPricesForm() {
-  // Client selection states
   const [clientType, setClientType] = useState<'LOCAL' | 'OUTSTATION'>('LOCAL');
-  const [clientsGrouped, setClientsGrouped] = useState<Record<'LOCAL' | 'OUTSTATION', string[]>>({
-    LOCAL: [],
-    OUTSTATION: []
-  });
   const [selectedClient, setSelectedClient] = useState<string>('');
-  const [isLoadingClients, setIsLoadingClients] = useState<boolean>(false);
-
-  // Product prices states
-  const [products, setProducts] = useState<ProductPrice[]>([]);
+  
+  // Pricing matrix states loaded all at once
+  const [productsList, setProductsList] = useState<string[]>([]);
+  const [clientsList, setClientsList] = useState<string[]>([]);
+  const [priceMap, setPriceMap] = useState<Record<string, Record<string, number>>>({});
+  const [isLoadingAll, setIsLoadingAll] = useState<boolean>(false);
+  
+  // Local input prices states
   const [updatedPrices, setUpdatedPrices] = useState<Record<string, string>>({});
-  const [isLoadingPrices, setIsLoadingPrices] = useState<boolean>(false);
-
-  // Search & Filter states
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modal / Feedback states
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState<string>('');
 
-  // 1. Fetch active clients grouped by Local/Outstation on mount
+  // 1. Fetch entire pricing matrix on mount and tab switch
   useEffect(() => {
-    async function loadClients() {
-      setIsLoadingClients(true);
-      try {
-        const res = await fetch('/api/prices?action=getClients');
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        if (!res.ok) throw new Error('Failed to fetch clients list');
-        const data = await res.json();
-        if (data && (data.LOCAL || data.OUTSTATION)) {
-          setClientsGrouped({
-            LOCAL: Array.isArray(data.LOCAL) ? data.LOCAL : [],
-            OUTSTATION: Array.isArray(data.OUTSTATION) ? data.OUTSTATION : []
-          });
-        }
-      } catch (err) {
-        console.error('Error loading clients:', err);
-      } finally {
-        setIsLoadingClients(false);
-      }
-    }
-    loadClients();
-  }, []);
-
-  // 2. Clear client selection when switching between Local and Outstation
-  const handleTypeChange = (type: 'LOCAL' | 'OUTSTATION') => {
-    setClientType(type);
-    setSelectedClient('');
-    setProducts([]);
-    setUpdatedPrices({});
-    setSearchQuery('');
-  };
-
-  // 3. Fetch product prices when selected client changes
-  useEffect(() => {
-    if (!selectedClient) {
-      setProducts([]);
+    async function loadAllPricingData() {
+      setIsLoadingAll(true);
+      setSelectedClient('');
       setUpdatedPrices({});
-      return;
-    }
-
-    async function loadPrices() {
-      setIsLoadingPrices(true);
+      setSearchQuery('');
       try {
-        const res = await fetch(
-          `/api/prices?action=getPrices&clientName=${encodeURIComponent(selectedClient)}&clientType=${clientType}`
-        );
+        const res = await fetch(`/api/prices?action=getAllPrices&clientType=${clientType}`);
         if (res.status === 401) {
           window.location.href = '/login';
           return;
         }
-        if (!res.ok) throw new Error('Failed to load product pricing');
+        if (!res.ok) throw new Error('Failed to load pricing matrix');
         const data = await res.json();
         
-        if (data.ok && Array.isArray(data.products)) {
-          setProducts(data.products);
-          
-          // Pre-populate input values with existing prices
-          const initialPrices: Record<string, string> = {};
-          data.products.forEach((p: ProductPrice) => {
-            initialPrices[p.name] = p.price !== null ? p.price.toString() : '';
-          });
-          setUpdatedPrices(initialPrices);
+        if (data.ok) {
+          setProductsList(data.products || []);
+          setClientsList(data.clients || []);
+          setPriceMap(data.priceMap || {});
         } else {
           throw new Error(data.message || 'Invalid product pricing data returned');
         }
       } catch (err: any) {
-        console.error('Error loading prices:', err);
+        console.error('Error loading pricing matrix:', err);
         setSubmitStatus('error');
-        setSubmitMessage(err.message || 'Failed to load client prices. Please try again.');
+        setSubmitMessage(err.message || 'Failed to load pricing matrix. Please try again.');
       } finally {
-        setIsLoadingPrices(false);
+        setIsLoadingAll(false);
       }
     }
+    
+    loadAllPricingData();
+  }, [clientType]);
 
-    loadPrices();
-  }, [selectedClient, clientType]);
+  // 2. Tab change handler
+  const handleTypeChange = (type: 'LOCAL' | 'OUTSTATION') => {
+    setClientType(type);
+  };
+
+  // 3. Populate inputs instantly when selected client changes (0ms delay)
+  useEffect(() => {
+    if (!selectedClient) {
+      setUpdatedPrices({});
+      return;
+    }
+
+    const clientPrices = priceMap[selectedClient] || {};
+    const initialPrices: Record<string, string> = {};
+    productsList.forEach((prodName) => {
+      const price = clientPrices[prodName];
+      initialPrices[prodName] = price !== undefined && price !== null ? price.toString() : '';
+    });
+    setUpdatedPrices(initialPrices);
+  }, [selectedClient, productsList, priceMap]);
 
   // 4. Handle input changes for price fields
   const handlePriceChange = (productName: string, val: string) => {
-    // Allow empty string or valid decimals/integers
     if (val === '' || /^\d*\.?\d*$/.test(val)) {
       setUpdatedPrices((prev) => ({
         ...prev,
@@ -134,12 +105,10 @@ export default function ProductPricesForm() {
     setSubmitStatus('loading');
     setSubmitMessage(`Saving custom prices for ${selectedClient}...`);
 
-    // Clean up prices mapping to submit
     const cleanedPrices: Record<string, number | string> = {};
     for (const prodName in updatedPrices) {
       if (updatedPrices.hasOwnProperty(prodName)) {
         const rawVal = updatedPrices[prodName].trim();
-        // If empty, pass as empty string to reset the price in sheet
         cleanedPrices[prodName] = rawVal === '' ? '' : parseFloat(rawVal);
       }
     }
@@ -156,7 +125,6 @@ export default function ProductPricesForm() {
       });
 
       if (res.status === 401) {
-        // Save state to localStorage as a fallback draft
         try {
           localStorage.setItem('draft_pricing_client', selectedClient);
           localStorage.setItem('draft_pricing_type', clientType);
@@ -173,10 +141,24 @@ export default function ProductPricesForm() {
         throw new Error(data.message || data.error || 'Failed to save prices');
       }
 
+      // Update local priceMap state in memory to reflect the new prices instantly
+      setPriceMap((prev) => {
+        const newClientPrices: Record<string, number> = {};
+        for (const prodName in cleanedPrices) {
+          const val = cleanedPrices[prodName];
+          if (val !== '') {
+            newClientPrices[prodName] = val as number;
+          }
+        }
+        return {
+          ...prev,
+          [selectedClient]: newClientPrices
+        };
+      });
+
       setSubmitStatus('success');
       setSubmitMessage('Prices updated successfully in the Google Sheet!');
       
-      // Reload current prices from the server to sync state
       setTimeout(() => {
         setSubmitStatus('idle');
       }, 2500);
@@ -208,10 +190,9 @@ export default function ProductPricesForm() {
     }
   }, []);
 
-  // Filter products based on search query (always show active products only)
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch && p.isActive;
+  // Filter products based on search query
+  const filteredProducts = productsList.filter((prodName) => {
+    return prodName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -261,15 +242,15 @@ export default function ProductPricesForm() {
           {/* Searchable Client Selector */}
           <div className='form-group'>
             <label className='label'>Client Name *</label>
-            {isLoadingClients ? (
-              <div className='h-11 flex items-center justify-center border border-input rounded-lg bg-background text-sm text-muted-foreground gap-2'>
+            {isLoadingAll ? (
+              <div className='h-11 flex items-center justify-center border border-input rounded-lg bg-background text-sm text-muted-foreground gap-2 animate-pulse'>
                 <span className='h-4 w-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin' />
-                Loading clients database...
+                Loading pricing matrix...
               </div>
             ) : (
               <SearchableSelect
                 value={selectedClient}
-                options={clientsGrouped[clientType]}
+                options={clientsList}
                 placeholder={`Search active ${clientType.toLowerCase()} clients...`}
                 emptyLabel={`No active ${clientType.toLowerCase()} clients found`}
                 label='Client Name'
@@ -303,13 +284,7 @@ export default function ProductPricesForm() {
             </div>
           </div>
 
-          {/* Loading Indicator */}
-          {isLoadingPrices ? (
-            <div className='card p-16 flex flex-col items-center justify-center text-muted-foreground gap-4'>
-              <span className='h-8 w-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin' />
-              <p className='font-semibold text-sm'>Loading client price matrix from spreadsheet...</p>
-            </div>
-          ) : filteredProducts.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className='card p-12 text-center text-muted-foreground space-y-2'>
               <HelpCircle className='mx-auto text-slate-300' size={40} />
               <h3 className='font-bold text-slate-700 dark:text-slate-300'>No Products Found</h3>
@@ -324,23 +299,23 @@ export default function ProductPricesForm() {
             <>
               {/* Grid Layout */}
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                {filteredProducts.map((p) => {
-                  const currentPrice = p.price;
-                  const newPrice = updatedPrices[p.name] || '';
+                {filteredProducts.map((prodName) => {
+                  const currentPrice = priceMap[selectedClient]?.[prodName];
+                  const newPrice = updatedPrices[prodName] || '';
 
                   return (
                     <div 
-                      key={p.name}
-                      className='card p-5 space-y-4 border border-border/60 hover:border-primary/30 hover:shadow-sm transition-all duration-300'
+                      key={prodName}
+                      className='card p-5 space-y-4 border border-border/60 hover:border-primary/30 hover:shadow-sm transition-all duration-300 flex flex-col justify-between'
                     >
                       {/* Product Info */}
                       <div className='flex items-start justify-between gap-3'>
                         <div className='space-y-1'>
                           <h4 className='font-bold text-foreground text-sm md:text-base leading-tight'>
-                            {p.name}
+                            {prodName}
                           </h4>
                           {/* Historical price display */}
-                          {currentPrice !== null ? (
+                          {currentPrice !== undefined && currentPrice !== null ? (
                             <p className='text-xs font-semibold text-primary/80 flex items-center gap-1'>
                               <span>🏷️ Current Price:</span>
                               <span className='font-bold text-foreground'>₹{currentPrice}</span>
@@ -354,7 +329,7 @@ export default function ProductPricesForm() {
                       </div>
 
                       {/* Price Input Field */}
-                      <div className='form-group'>
+                      <div className='form-group mt-2'>
                         <div className='relative'>
                           <span className='absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm'>
                             ₹
@@ -362,15 +337,15 @@ export default function ProductPricesForm() {
                           <input
                             type='text'
                             inputMode='decimal'
-                            placeholder={currentPrice !== null ? currentPrice.toString() : 'Set price...'}
+                            placeholder={currentPrice !== undefined && currentPrice !== null ? currentPrice.toString() : 'Set price...'}
                             className='input pl-8 pr-12 font-semibold text-sm'
                             value={newPrice}
-                            onChange={(e) => handlePriceChange(p.name, e.target.value)}
+                            onChange={(e) => handlePriceChange(prodName, e.target.value)}
                           />
                           {newPrice !== '' && (
                             <button
                               type='button'
-                              onClick={() => handlePriceChange(p.name, '')}
+                              onClick={() => handlePriceChange(prodName, '')}
                               className='absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-primary hover:underline bg-transparent border-none cursor-pointer'
                             >
                               Reset

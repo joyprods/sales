@@ -335,6 +335,7 @@ function syncClientToPricingSheet(partyName, localOrOutstation) {
 }
 
 // Fetch all active client names grouped by Local/Outstation type
+// Fetch all active client names grouped by Local/Outstation type from pricing sheets
 function getActiveClientsGrouped() {
   var cacheKey = "active_clients_grouped";
   try {
@@ -348,46 +349,31 @@ function getActiveClientsGrouped() {
 
   try {
     var config = _getSetupConfig();
-    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
-    var sheet = ss.getSheetByName(config.clientSheetName);
-    if (!sheet) return { LOCAL: [], OUTSTATION: [] };
-    
-    var headerRow = 2;
-    var lastRow = sheet.getLastRow();
-    if (lastRow <= headerRow) return { LOCAL: [], OUTSTATION: [] };
-    
-    var lastCol = sheet.getLastColumn();
-    var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
-    
-    var statusIdx = _findHeaderIndex(headers, "CLIENT STATUS");
-    var nameIdx = _findHeaderIndex(headers, "PARTY NAME");
-    var typeIdx = _findHeaderIndex(headers, "LOCAL / OUTSTATION");
-    
-    if (nameIdx === -1) return { LOCAL: [], OUTSTATION: [] };
-    
-    var statusValues = statusIdx !== -1 
-      ? sheet.getRange(headerRow + 1, statusIdx + 1, lastRow - headerRow, 1).getValues()
-      : null;
-    var nameValues = sheet.getRange(headerRow + 1, nameIdx + 1, lastRow - headerRow, 1).getValues();
-    var typeValues = typeIdx !== -1
-      ? sheet.getRange(headerRow + 1, typeIdx + 1, lastRow - headerRow, 1).getValues()
-      : null;
+    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
     
     var localClients = [];
-    var outstationClients = [];
+    var localSheet = clientSs.getSheetByName("Local Product Prices");
+    if (localSheet) {
+      var localLastRow = localSheet.getLastRow();
+      if (localLastRow > 1) {
+        localClients = localSheet.getRange(2, 1, localLastRow - 1, 1).getValues().map(function(r) {
+          return (r[0] || "").toString().trim();
+        }).filter(function(name) {
+          return name !== "";
+        });
+      }
+    }
     
-    for (var i = 0; i < nameValues.length; i++) {
-      var status = statusValues ? (statusValues[i][0] || "").toString().trim().toUpperCase() : "ACTIVE";
-      var name = (nameValues[i][0] || "").toString().trim();
-      var type = typeValues ? (typeValues[i][0] || "").toString().trim().toUpperCase() : "";
-      
-      if (!name) continue;
-      if (statusIdx !== -1 && status !== "ACTIVE") continue;
-      
-      if (type === "OUTSTATION") {
-        outstationClients.push(name);
-      } else {
-        localClients.push(name);
+    var outstationClients = [];
+    var outstationSheet = clientSs.getSheetByName("Outstation Product Prices");
+    if (outstationSheet) {
+      var outLastRow = outstationSheet.getLastRow();
+      if (outLastRow > 1) {
+        outstationClients = outstationSheet.getRange(2, 1, outLastRow - 1, 1).getValues().map(function(r) {
+          return (r[0] || "").toString().trim();
+        }).filter(function(name) {
+          return name !== "";
+        });
       }
     }
     
@@ -671,7 +657,7 @@ function populateAllClientsInPricingSheets() {
   optimizeAllSheets();
 
   try {
-    var clients = getActiveClientsGrouped();
+    var clients = _getSourceActiveClientsGrouped();
     var config = _getSetupConfig();
     var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
     
@@ -799,6 +785,140 @@ function optimizeAllSheets() {
     try {
       SpreadsheetApp.getUi().alert("Error during optimization: " + e.toString());
     } catch (uiErr) {}
+    return { ok: false, message: e.toString() };
+  }
+}
+
+// Fetch all active client names grouped by Local/Outstation from the master Client List sheet
+function _getSourceActiveClientsGrouped() {
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName(config.clientSheetName);
+    if (!sheet) return { LOCAL: [], OUTSTATION: [] };
+    
+    var headerRow = 2;
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= headerRow) return { LOCAL: [], OUTSTATION: [] };
+    
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+    
+    var statusIdx = _findHeaderIndex(headers, "CLIENT STATUS");
+    var nameIdx = _findHeaderIndex(headers, "PARTY NAME");
+    var typeIdx = _findHeaderIndex(headers, "LOCAL / OUTSTATION");
+    
+    if (nameIdx === -1) return { LOCAL: [], OUTSTATION: [] };
+    
+    var statusValues = statusIdx !== -1 
+      ? sheet.getRange(headerRow + 1, statusIdx + 1, lastRow - headerRow, 1).getValues()
+      : null;
+    var nameValues = sheet.getRange(headerRow + 1, nameIdx + 1, lastRow - headerRow, 1).getValues();
+    var typeValues = typeIdx !== -1
+      ? sheet.getRange(headerRow + 1, typeIdx + 1, lastRow - headerRow, 1).getValues()
+      : null;
+    
+    var localClients = [];
+    var outstationClients = [];
+    
+    for (var i = 0; i < nameValues.length; i++) {
+      var status = statusValues ? (statusValues[i][0] || "").toString().trim().toUpperCase() : "ACTIVE";
+      var name = (nameValues[i][0] || "").toString().trim();
+      var type = typeValues ? (typeValues[i][0] || "").toString().trim().toUpperCase() : "";
+      
+      if (!name) continue;
+      if (statusIdx !== -1 && status !== "ACTIVE") continue;
+      
+      if (type === "OUTSTATION") {
+        outstationClients.push(name);
+      } else {
+        localClients.push(name);
+      }
+    }
+    
+    return {
+      LOCAL: localClients.sort(),
+      OUTSTATION: outstationClients.sort()
+    };
+  } catch (e) {
+    _logError("_getSourceActiveClientsGrouped", e, "");
+    return { LOCAL: [], OUTSTATION: [] };
+  }
+}
+
+// Fetch all product price matrix data for a specific category (Local/Outstation) at once
+function getAllPricingData(clientType) {
+  var cacheKey = "all_pricing_data_" + clientType;
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    Logger.log("Cache get error for all pricing: " + err);
+  }
+
+  try {
+    var config = _getSetupConfig();
+    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
+    var pricingSheet = clientSs.getSheetByName(pricingSheetName);
+    if (!pricingSheet) {
+      return { ok: true, products: [], clients: [], priceMap: {} };
+    }
+    
+    var lastRow = pricingSheet.getLastRow();
+    var lastCol = pricingSheet.getLastColumn();
+    if (lastRow <= 1 || lastCol <= 1) {
+      return { ok: true, products: [], clients: [], priceMap: {} };
+    }
+    
+    var gridValues = pricingSheet.getRange(1, 1, lastRow, lastCol).getValues();
+    
+    var headers = gridValues[0].map(function(h) {
+      return (h || "").toString().trim();
+    });
+    
+    var products = [];
+    for (var c = 1; c < headers.length; c++) {
+      if (headers[c]) {
+        products.push(headers[c]);
+      }
+    }
+    
+    var clients = [];
+    var priceMap = {};
+    
+    for (var r = 1; r < gridValues.length; r++) {
+      var clientName = (gridValues[r][0] || "").toString().trim();
+      if (!clientName) continue;
+      
+      clients.push(clientName);
+      priceMap[clientName] = {};
+      
+      for (var c = 1; c < headers.length; c++) {
+        var prodName = headers[c];
+        if (!prodName) continue;
+        
+        var val = gridValues[r][c];
+        var parsedPrice = (val !== "" && val !== null && !isNaN(val)) ? parseFloat(val) : null;
+        if (parsedPrice !== null) {
+          priceMap[clientName][prodName] = parsedPrice;
+        }
+      }
+    }
+    
+    var result = {
+      ok: true,
+      products: products,
+      clients: clients.sort(),
+      priceMap: priceMap
+    };
+    
+    _setCachedData(cacheKey, result, 900);
+    return result;
+  } catch (e) {
+    _logError("getAllPricingData", e, clientType);
     return { ok: false, message: e.toString() };
   }
 }

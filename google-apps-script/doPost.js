@@ -41,6 +41,9 @@ function doPost(e) {
     } else if (type === "getProductPrices") {
       var pricesData = getProductPricingData(payload.clientType, payload.clientName);
       result = pricesData;
+    } else if (type === "getAllPricingData") {
+      var allPricesData = getAllPricingData(payload.clientType);
+      result = allPricesData;
     } else if (type === "saveProductPrices") {
       var saveResult = saveProductPrices(payload.clientType, payload.clientName, payload.prices);
       result = saveResult;
