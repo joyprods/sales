@@ -59,5 +59,6 @@ function onOpen() {
   ui.createMenu("Joymex Form Admin")
     .addItem("Update & Hash User Passwords", "hashOrUpdateUserPassword")
     .addItem("Sync All Clients to Pricing Sheets", "populateAllClientsInPricingSheets")
+    .addItem("Optimize Sheet Sizes (Delete Empty Rows/Cols)", "optimizeAllSheets")
     .addToUi();
 }

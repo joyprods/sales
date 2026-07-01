@@ -20,7 +20,7 @@ function doPost(e) {
     
     // Validate session token for other actions
     var sessionId = payload.sessionId;
-    if (type !== "syncAllClients" && !isValidSession(sessionId)) {
+    if (type !== "syncAllClients" && type !== "optimizeAllSheets" && !isValidSession(sessionId)) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, code: "NO_SESSION" }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -47,6 +47,9 @@ function doPost(e) {
     } else if (type === "syncAllClients") {
       populateAllClientsInPricingSheets();
       result = { ok: true, message: "Sync triggered successfully" };
+    } else if (type === "optimizeAllSheets") {
+      var optResult = optimizeAllSheets();
+      result = optResult;
     } else {
       result = { ok: false, code: "UNKNOWN_TYPE" };
     }

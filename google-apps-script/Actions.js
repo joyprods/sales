@@ -667,6 +667,9 @@ function _clearCacheKey(key) {
 
 // Re-sync and populate all active clients (Local/Outstation) directly into Column A of the pricing sheets
 function populateAllClientsInPricingSheets() {
+  // Automatically optimize sheet sizes to free up cell count before syncing
+  optimizeAllSheets();
+
   try {
     var clients = getActiveClientsGrouped();
     var config = _getSetupConfig();
@@ -735,5 +738,67 @@ function populateAllClientsInPricingSheets() {
     } catch (uiErr) {
       Logger.log("UI alert not available: " + uiErr);
     }
+  }
+}
+
+// Remove empty rows and columns from pricing and data sheets in the Client Spreadsheet
+function optimizeAllSheets() {
+  try {
+    var config = _getSetupConfig();
+    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheets = clientSs.getSheets();
+    
+    var log = "Optimization Log:\n";
+    var totalCellsSaved = 0;
+    
+    for (var i = 0; i < sheets.length; i++) {
+      var sheet = sheets[i];
+      var name = sheet.getName();
+      
+      // Get dimensions
+      var maxRows = sheet.getMaxRows();
+      var lastRow = sheet.getLastRow();
+      var maxCols = sheet.getMaxColumns();
+      var lastCol = sheet.getLastColumn();
+      
+      var initialCells = maxRows * maxCols;
+      
+      // Delete unused rows (keep 20 padding rows, minimum 100)
+      var targetRows = Math.max(100, lastRow + 20);
+      if (maxRows > targetRows) {
+        sheet.deleteRows(targetRows + 1, maxRows - targetRows);
+      }
+      
+      // Delete unused columns (keep 5 padding columns, minimum 26)
+      var targetCols = Math.max(26, lastCol + 5);
+      if (maxCols > targetCols) {
+        sheet.deleteColumns(targetCols + 1, maxCols - targetCols);
+      }
+      
+      var newMaxRows = sheet.getMaxRows();
+      var newMaxCols = sheet.getMaxColumns();
+      var finalCells = newMaxRows * newMaxCols;
+      var cellsSaved = initialCells - finalCells;
+      totalCellsSaved += cellsSaved;
+      
+      log += "- " + name + ": Shrunk from " + maxRows + "x" + maxCols + " (" + initialCells + " cells) to " + newMaxRows + "x" + newMaxCols + " (" + finalCells + " cells). Saved: " + cellsSaved + "\n";
+    }
+    
+    log += "\nTotal Cells Saved: " + totalCellsSaved;
+    Logger.log(log);
+    
+    try {
+      SpreadsheetApp.getUi().alert("Sheet Optimization Completed!\n\n" + log);
+    } catch (uiErr) {
+      Logger.log("UI alert not available: " + uiErr);
+    }
+    
+    return { ok: true, log: log };
+  } catch (e) {
+    _logError("optimizeAllSheets", e, "");
+    try {
+      SpreadsheetApp.getUi().alert("Error during optimization: " + e.toString());
+    } catch (uiErr) {}
+    return { ok: false, message: e.toString() };
   }
 }
