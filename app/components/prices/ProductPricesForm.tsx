@@ -383,22 +383,27 @@ export default function ProductPricesForm() {
                 })}
               </div>
 
-              {/* Save / Submit Bar */}
-              <div className='card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t-2 border-primary/20 bg-primary/5 dark:bg-primary/10 shadow-sm'>
-                <div className='flex items-start gap-2.5 max-w-lg'>
-                  <Info className='shrink-0 text-primary mt-0.5' size={18} />
-                  <p className='text-xs text-muted-foreground leading-relaxed'>
-                    Saving updates the price columns in the Client spreadsheet. Leaving an input empty resets or clears the custom price for that product on Google Sheets.
-                  </p>
+              {/* Save / Submit Bar (Fixed at bottom) */}
+              <div className='fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-border p-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] transition-all duration-300'>
+                <div className='max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+                  <div className='flex items-start gap-2.5 max-w-xl'>
+                    <Info className='shrink-0 text-primary mt-0.5' size={16} />
+                    <p className='text-[11px] md:text-xs text-muted-foreground leading-relaxed'>
+                      Saving updates the price columns in the Client spreadsheet. Leaving an input empty resets or clears the custom price for that product on Google Sheets.
+                    </p>
+                  </div>
+                  <button
+                    type='submit'
+                    className='btn-primary flex items-center justify-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto h-11 px-6 shadow-sm cursor-pointer'
+                  >
+                    <Save size={16} />
+                    <span>Save Pricing Changes</span>
+                  </button>
                 </div>
-                <button
-                  type='submit'
-                  className='btn-primary flex items-center justify-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto h-12 px-6'
-                >
-                  <Save size={18} />
-                  <span>Save Pricing Changes</span>
-                </button>
               </div>
+
+              {/* Spacer to prevent fixed bar from covering cards */}
+              <div className='h-28' />
             </>
           )}
         </form>

@@ -425,33 +425,35 @@ function getProductPricingData(clientType, clientName) {
       _setCachedData(headersCacheKey, headers, 900);
     }
     
-    // Add missing product columns at the end
-    var newProductsAdded = false;
+    // Add missing product columns at the end in batch!
+    var newProductsToAppend = [];
     for (var i = 0; i < activeProducts.length; i++) {
       var prod = activeProducts[i];
       if (headers.indexOf(prod) === -1) {
-        if (!pricingSheet) {
-          pricingSheet = clientSs.getSheetByName(pricingSheetName);
-        }
-        var lastCol = pricingSheet.getLastColumn();
-        pricingSheet.getRange(1, lastCol + 1).setValue(prod);
+        newProductsToAppend.push(prod);
         headers.push(prod);
-        newProductsAdded = true;
       }
     }
     
-    if (newProductsAdded) {
+    if (newProductsToAppend.length > 0) {
+      if (!pricingSheet) {
+        pricingSheet = clientSs.getSheetByName(pricingSheetName);
+      }
+      var currentLastCol = pricingSheet.getLastColumn();
+      pricingSheet.getRange(1, currentLastCol + 1, 1, newProductsToAppend.length).setValues([newProductsToAppend]);
       _setCachedData(headersCacheKey, headers, 900);
     }
     
     // 3. Get client row index (cached for 15 minutes)
     var clientsCacheKey = "pricing_clients_" + clientType;
     var pricingClients = _getCachedData(clientsCacheKey);
+    var lastRow = 0;
+    
     if (!pricingClients) {
       if (!pricingSheet) {
         pricingSheet = clientSs.getSheetByName(pricingSheetName);
       }
-      var lastRow = pricingSheet.getLastRow();
+      lastRow = pricingSheet.getLastRow();
       if (lastRow > 1) {
         pricingClients = pricingSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(function(r) {
           return (r[0] || "").toString().trim();
@@ -462,17 +464,43 @@ function getProductPricingData(clientType, clientName) {
       _setCachedData(clientsCacheKey, pricingClients, 900);
     }
     
+    // Auto-populate all active clients of this type to support editing directly in Google Sheets
+    var activeClientsGrouped = getActiveClientsGrouped();
+    var activeClientsOfType = (clientType === "OUTSTATION") ? activeClientsGrouped.OUTSTATION : activeClientsGrouped.LOCAL;
+    var missingClients = [];
+    
+    for (var i = 0; i < activeClientsOfType.length; i++) {
+      var ac = activeClientsOfType[i];
+      if (pricingClients.indexOf(ac) === -1) {
+        missingClients.push(ac);
+      }
+    }
+    
+    if (missingClients.length > 0) {
+      if (!pricingSheet) {
+        pricingSheet = clientSs.getSheetByName(pricingSheetName);
+      }
+      lastRow = pricingSheet.getLastRow();
+      pricingSheet.getRange(lastRow + 1, 1, missingClients.length, 1).setValues(
+        missingClients.map(function(c) { return [c]; })
+      );
+      
+      pricingClients = pricingClients.concat(missingClients);
+      _setCachedData(clientsCacheKey, pricingClients, 900);
+    }
+    
     var clientRowIdx = pricingClients.indexOf(clientName);
     if (clientRowIdx === -1) {
       if (!pricingSheet) {
         pricingSheet = clientSs.getSheetByName(pricingSheetName);
       }
-      pricingSheet.appendRow([clientName]);
+      lastRow = pricingSheet.getLastRow();
+      pricingSheet.getRange(lastRow + 1, 1).setValue(clientName);
       pricingClients.push(clientName);
       _setCachedData(clientsCacheKey, pricingClients, 900);
-      clientRowIdx = pricingClients.length + 1; // row is length + 1 (headers is 1)
+      clientRowIdx = pricingClients.length + 1;
     } else {
-      clientRowIdx = clientRowIdx + 2; // row is index + 2
+      clientRowIdx = clientRowIdx + 2;
     }
     
     // 4. Read prices for the client's row
@@ -506,7 +534,7 @@ function getProductPricingData(clientType, clientName) {
   }
 }
 
-// Save updated prices to the spreadsheet matrix
+// Save updated prices to the spreadsheet matrix in a single batch write call!
 function saveProductPrices(clientType, clientName, prices) {
   try {
     var config = _getSetupConfig();
@@ -553,26 +581,39 @@ function saveProductPrices(clientType, clientName, prices) {
       clientRowIdx = clientRowIdx + 2;
     }
     
+    // Read the current row of values
+    var rowValues = pricingSheet.getRange(clientRowIdx, 1, 1, lastCol).getValues()[0];
+    var newColsToAppend = [];
     var newColAdded = false;
+    
     for (var prodName in prices) {
       if (!prices.hasOwnProperty(prodName)) continue;
       
       var priceVal = prices[prodName];
       var colIdx = headers.indexOf(prodName);
       if (colIdx === -1) {
-        pricingSheet.getRange(1, lastCol + 1).setValue(prodName);
         headers.push(prodName);
-        lastCol++;
-        colIdx = lastCol - 1;
+        newColsToAppend.push(prodName);
+        colIdx = headers.length - 1;
         newColAdded = true;
       }
       
-      pricingSheet.getRange(clientRowIdx, colIdx + 1).setValue(priceVal === "" ? "" : parseFloat(priceVal));
+      var cellVal = priceVal === "" ? "" : parseFloat(priceVal);
+      while (rowValues.length <= colIdx) {
+        rowValues.push("");
+      }
+      rowValues[colIdx] = cellVal;
     }
     
-    if (newColAdded) {
+    // Write new columns in batch if any
+    if (newColsToAppend.length > 0) {
+      pricingSheet.getRange(1, lastCol + 1, 1, newColsToAppend.length).setValues([newColsToAppend]);
+      lastCol += newColsToAppend.length;
       _setCachedData(headersCacheKey, headers, 900);
     }
+    
+    // Write the entire updated row back in one batch call!
+    pricingSheet.getRange(clientRowIdx, 1, 1, rowValues.length).setValues([rowValues]);
     
     return { ok: true };
   } catch (e) {
