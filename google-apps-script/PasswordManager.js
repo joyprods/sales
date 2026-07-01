@@ -58,5 +58,6 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu("Joymex Form Admin")
     .addItem("Update & Hash User Passwords", "hashOrUpdateUserPassword")
+    .addItem("Sync All Clients to Pricing Sheets", "populateAllClientsInPricingSheets")
     .addToUi();
 }

@@ -342,14 +342,21 @@ function getActiveClientsGrouped() {
     
     if (nameIdx === -1) return { LOCAL: [], OUTSTATION: [] };
     
-    var data = sheet.getRange(headerRow + 1, 1, lastRow - headerRow, lastCol).getValues();
+    var statusValues = statusIdx !== -1 
+      ? sheet.getRange(headerRow + 1, statusIdx + 1, lastRow - headerRow, 1).getValues()
+      : null;
+    var nameValues = sheet.getRange(headerRow + 1, nameIdx + 1, lastRow - headerRow, 1).getValues();
+    var typeValues = typeIdx !== -1
+      ? sheet.getRange(headerRow + 1, typeIdx + 1, lastRow - headerRow, 1).getValues()
+      : null;
+    
     var localClients = [];
     var outstationClients = [];
     
-    for (var i = 0; i < data.length; i++) {
-      var status = (data[i][statusIdx] || "").toString().trim().toUpperCase();
-      var name = (data[i][nameIdx] || "").toString().trim();
-      var type = (data[i][typeIdx] || "").toString().trim().toUpperCase();
+    for (var i = 0; i < nameValues.length; i++) {
+      var status = statusValues ? (statusValues[i][0] || "").toString().trim().toUpperCase() : "ACTIVE";
+      var name = (nameValues[i][0] || "").toString().trim();
+      var type = typeValues ? (typeValues[i][0] || "").toString().trim().toUpperCase() : "";
       
       if (!name) continue;
       if (statusIdx !== -1 && status !== "ACTIVE") continue;
@@ -655,5 +662,70 @@ function _clearCacheKey(key) {
     cache.remove(key);
   } catch (e) {
     Logger.log("Cache clear error for key " + key + ": " + e);
+  }
+}
+
+// Re-sync and populate all active clients (Local/Outstation) directly into Column A of the pricing sheets
+function populateAllClientsInPricingSheets() {
+  try {
+    var clients = getActiveClientsGrouped();
+    var config = _getSetupConfig();
+    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    
+    // Sync LOCAL clients
+    var localSheet = clientSs.getSheetByName("Local Product Prices");
+    if (!localSheet) {
+      localSheet = clientSs.insertSheet("Local Product Prices");
+      localSheet.appendRow(["PARTY NAME"]);
+    }
+    var localLastRow = localSheet.getLastRow();
+    var localExisting = [];
+    if (localLastRow > 1) {
+      localExisting = localSheet.getRange(2, 1, localLastRow - 1, 1).getValues().map(function(r) {
+        return (r[0] || "").toString().trim();
+      });
+    }
+    var localToAppend = [];
+    for (var i = 0; i < clients.LOCAL.length; i++) {
+      var c = clients.LOCAL[i];
+      if (localExisting.indexOf(c) === -1) {
+        localToAppend.push([c]);
+      }
+    }
+    if (localToAppend.length > 0) {
+      localSheet.getRange(localLastRow + 1, 1, localToAppend.length, 1).setValues(localToAppend);
+      _clearCacheKey("pricing_clients_LOCAL");
+    }
+    
+    // Sync OUTSTATION clients
+    var outstationSheet = clientSs.getSheetByName("Outstation Product Prices");
+    if (!outstationSheet) {
+      outstationSheet = clientSs.insertSheet("Outstation Product Prices");
+      outstationSheet.appendRow(["PARTY NAME"]);
+    }
+    var outLastRow = outstationSheet.getLastRow();
+    var outExisting = [];
+    if (outLastRow > 1) {
+      outExisting = outstationSheet.getRange(2, 1, outLastRow - 1, 1).getValues().map(function(r) {
+        return (r[0] || "").toString().trim();
+      });
+    }
+    var outToAppend = [];
+    for (var i = 0; i < clients.OUTSTATION.length; i++) {
+      var c = clients.OUTSTATION[i];
+      if (outExisting.indexOf(c) === -1) {
+        outToAppend.push([c]);
+      }
+    }
+    if (outToAppend.length > 0) {
+      outstationSheet.getRange(outLastRow + 1, 1, outToAppend.length, 1).setValues(outToAppend);
+      _clearCacheKey("pricing_clients_OUTSTATION");
+    }
+    
+    _clearCacheKey("active_clients_grouped");
+    SpreadsheetApp.getUi().alert("Successfully synchronized all active clients to the pricing sheets.\nLocal: " + clients.LOCAL.length + " clients\nOutstation: " + clients.OUTSTATION.length + " clients.");
+  } catch (e) {
+    _logError("populateAllClientsInPricingSheets", e, "");
+    SpreadsheetApp.getUi().alert("Error synchronizing clients: " + e.toString());
   }
 }
