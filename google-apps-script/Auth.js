@@ -38,6 +38,9 @@ function loginUser(email, password) {
   var now = new Date();
   sessionsSheet.appendRow([sessionId, matchedUser.id, matchedUser.email, now, now]);
   
+  // Cache the valid session ID immediately so first requests are super fast
+  _setCachedData("sess_valid_" + sessionId, true, 3600);
+  
   return {
     ok: true,
     session: { sessionId: sessionId },
@@ -45,9 +48,20 @@ function loginUser(email, password) {
   };
 }
 
-// Session Validation
+// Session Validation (Cached for instant execution)
 function isValidSession(sessionId) {
   if (!sessionId) return false;
+  
+  var cacheKey = "sess_valid_" + sessionId;
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached === true) {
+      return true;
+    }
+  } catch (err) {
+    Logger.log("Session cache check error: " + err);
+  }
+  
   var ss = _getSetupSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.SHEET_SESSIONS);
   if (!sheet) return false;
@@ -55,9 +69,8 @@ function isValidSession(sessionId) {
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] === sessionId) {
-      // Update last accessed time
-      var now = new Date();
-      sheet.getRange(i + 1, 5).setValue(now);
+      // Cache valid status for 1 hour
+      _setCachedData(cacheKey, true, 3600);
       return true;
     }
   }

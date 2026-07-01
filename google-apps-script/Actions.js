@@ -723,9 +723,17 @@ function populateAllClientsInPricingSheets() {
     }
     
     _clearCacheKey("active_clients_grouped");
-    SpreadsheetApp.getUi().alert("Successfully synchronized all active clients to the pricing sheets.\nLocal: " + clients.LOCAL.length + " clients\nOutstation: " + clients.OUTSTATION.length + " clients.");
+    try {
+      SpreadsheetApp.getUi().alert("Successfully synchronized all active clients to the pricing sheets.\nLocal: " + clients.LOCAL.length + " clients\nOutstation: " + clients.OUTSTATION.length + " clients.");
+    } catch (uiErr) {
+      Logger.log("UI alert not available: " + uiErr);
+    }
   } catch (e) {
     _logError("populateAllClientsInPricingSheets", e, "");
-    SpreadsheetApp.getUi().alert("Error synchronizing clients: " + e.toString());
+    try {
+      SpreadsheetApp.getUi().alert("Error synchronizing clients: " + e.toString());
+    } catch (uiErr) {
+      Logger.log("UI alert not available: " + uiErr);
+    }
   }
 }
