@@ -265,22 +265,32 @@ export default function ProductPricesForm() {
       {selectedClient && (
         <form onSubmit={handleSavePrices} className='space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300'>
           
-          {/* Filters & Search Header */}
-          <div className='card py-4 px-6 flex items-center justify-between gap-4'>
+          {/* Filters & Search Header (Sticky at top below layout header) */}
+          <div className='sticky top-[73px] md:top-[89px] z-20 card py-4 px-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-sm backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border border-border/70 transition-all duration-200'>
             {/* Search Input */}
             <div className='relative flex-1 max-w-md'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={18} />
               <input
                 type='text'
                 placeholder='Search products by name...'
-                className='input pl-10'
+                className='input pl-10 h-10 text-sm'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            <div className='hidden sm:flex items-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800/40 px-3 py-1.5 rounded-lg border border-border/50 font-medium'>
-              <span>Showing {filteredProducts.length} active products</span>
+            {/* Sticky Top Action Buttons */}
+            <div className='flex items-center justify-between sm:justify-end gap-3 shrink-0'>
+              <div className='hidden lg:flex items-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800/40 px-3 py-2 rounded-lg border border-border/50 font-medium'>
+                <span>{filteredProducts.length} active products</span>
+              </div>
+              <button
+                type='submit'
+                className='btn-primary flex items-center justify-center gap-2 h-10 px-5 text-sm shadow-sm cursor-pointer w-full sm:w-auto'
+              >
+                <Save size={15} />
+                <span>Save Changes</span>
+              </button>
             </div>
           </div>
 
@@ -357,28 +367,6 @@ export default function ProductPricesForm() {
                   );
                 })}
               </div>
-
-              {/* Save / Submit Bar (Fixed at bottom) */}
-              <div className='fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-border p-4 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] transition-all duration-300'>
-                <div className='max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-                  <div className='flex items-start gap-2.5 max-w-xl'>
-                    <Info className='shrink-0 text-primary mt-0.5' size={16} />
-                    <p className='text-[11px] md:text-xs text-muted-foreground leading-relaxed'>
-                      Saving updates the price columns in the Client spreadsheet. Leaving an input empty resets or clears the custom price for that product on Google Sheets.
-                    </p>
-                  </div>
-                  <button
-                    type='submit'
-                    className='btn-primary flex items-center justify-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto h-11 px-6 shadow-sm cursor-pointer'
-                  >
-                    <Save size={16} />
-                    <span>Save Pricing Changes</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Spacer to prevent fixed bar from covering cards */}
-              <div className='h-28' />
             </>
           )}
         </form>
