@@ -309,7 +309,7 @@ export default function SearchableSelect({
             !hasValue || loading ? 'text-slate-400' : 'text-slate-900'
           }`}
         >
-          {loading ? `Loading ${label} data...` : value || emptyLabel}
+          {loading ? `Loading ${label} data...` : value || placeholder}
         </span>
         <ChevronDownIcon
           className={`size-4 transition-all duration-300 ${

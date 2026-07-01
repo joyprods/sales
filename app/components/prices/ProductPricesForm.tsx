@@ -29,7 +29,6 @@ export default function ProductPricesForm() {
 
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [showOnlyActive, setShowOnlyActive] = useState<boolean>(true);
 
   // Modal / Feedback states
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -209,16 +208,11 @@ export default function ProductPricesForm() {
     }
   }, []);
 
-  // Filter products based on search query and active toggle
+  // Filter products based on search query (always show active products only)
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesActive = showOnlyActive ? p.isActive : true;
-    return matchesSearch && matchesActive;
+    return matchesSearch && p.isActive;
   });
-
-  // Separate active and inactive/old products for stats
-  const activeCount = products.filter((p) => p.isActive).length;
-  const oldCount = products.filter((p) => !p.isActive).length;
 
   return (
     <div className='max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300'>
@@ -291,7 +285,7 @@ export default function ProductPricesForm() {
         <form onSubmit={handleSavePrices} className='space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300'>
           
           {/* Filters & Search Header */}
-          <div className='card py-4 px-6 flex flex-col md:flex-row md:items-center justify-between gap-4'>
+          <div className='card py-4 px-6 flex items-center justify-between gap-4'>
             {/* Search Input */}
             <div className='relative flex-1 max-w-md'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={18} />
@@ -304,23 +298,8 @@ export default function ProductPricesForm() {
               />
             </div>
 
-            {/* Checkbox Filter & Stats */}
-            <div className='flex items-center justify-between md:justify-end gap-6'>
-              <label className='flex items-center gap-2 text-sm font-semibold text-foreground/80 cursor-pointer select-none'>
-                <input
-                  type='checkbox'
-                  checked={showOnlyActive}
-                  onChange={(e) => setShowOnlyActive(e.target.checked)}
-                  className='rounded border-input text-primary focus:ring-primary h-4 w-4 transition cursor-pointer'
-                />
-                <span>Show active products only ({activeCount})</span>
-              </label>
-
-              {oldCount > 0 && !showOnlyActive && (
-                <span className='text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold px-2.5 py-1 rounded-full border border-border/50'>
-                  {oldCount} old columns preserved
-                </span>
-              )}
+            <div className='hidden sm:flex items-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800/40 px-3 py-1.5 rounded-lg border border-border/50 font-medium'>
+              <span>Showing {filteredProducts.length} active products</span>
             </div>
           </div>
 
@@ -352,13 +331,9 @@ export default function ProductPricesForm() {
                   return (
                     <div 
                       key={p.name}
-                      className={`card p-5 space-y-4 border transition-all duration-300 ${
-                        !p.isActive 
-                          ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-200/50 dark:border-slate-800/50 opacity-80' 
-                          : 'border-border/60 hover:border-primary/30 hover:shadow-sm'
-                      }`}
+                      className='card p-5 space-y-4 border border-border/60 hover:border-primary/30 hover:shadow-sm transition-all duration-300'
                     >
-                      {/* Product Info & Status */}
+                      {/* Product Info */}
                       <div className='flex items-start justify-between gap-3'>
                         <div className='space-y-1'>
                           <h4 className='font-bold text-foreground text-sm md:text-base leading-tight'>
@@ -376,15 +351,6 @@ export default function ProductPricesForm() {
                             </p>
                           )}
                         </div>
-
-                        {/* Status Badge */}
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                          p.isActive 
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10' 
-                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-border/40'
-                        }`}>
-                          {p.isActive ? 'Active' : 'Old'}
-                        </span>
                       </div>
 
                       {/* Price Input Field */}

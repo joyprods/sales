@@ -1,5 +1,5 @@
 // Config.js
-// Global Configuration Constants for Jinali Sales Web App
+// Global Configuration Constants for Joymex Sales Web App
 
 var CONFIG = {
   SETUP_SPREADSHEET_ID: "1HY-JSXhIp8jB0zw5ItRbZTeyk6uuTgSXi0eFZ2E-vBA",

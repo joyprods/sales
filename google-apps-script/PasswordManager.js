@@ -56,7 +56,7 @@ function hashOrUpdateUserPassword() {
 // Add a custom menu to the Setup Spreadsheet to run this utility easily
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu("Jinali Form Admin")
+  ui.createMenu("Joymex Form Admin")
     .addItem("Update & Hash User Passwords", "hashOrUpdateUserPassword")
     .addToUi();
 }

@@ -198,6 +198,15 @@ function createClient(data) {
     _logError("createClientSync", syncErr, data.partyName);
   }
   
+  // Clear cached client list and row data
+  try {
+    _clearCacheKey("active_clients_grouped");
+    _clearCacheKey("pricing_clients_LOCAL");
+    _clearCacheKey("pricing_clients_OUTSTATION");
+  } catch (cacheErr) {
+    Logger.log("Cache bust error: " + cacheErr);
+  }
+  
   return { ok: true, clientId: newClientId };
 }
 
@@ -292,6 +301,8 @@ function syncClientToPricingSheet(partyName, localOrOutstation) {
     
     if (clientNames.indexOf(partyName) === -1) {
       pricingSheet.appendRow([partyName]);
+      _clearCacheKey("pricing_clients_" + clientType);
+      _clearCacheKey("active_clients_grouped");
     }
     return true;
   } catch (e) {
@@ -302,6 +313,16 @@ function syncClientToPricingSheet(partyName, localOrOutstation) {
 
 // Fetch all active client names grouped by Local/Outstation type
 function getActiveClientsGrouped() {
+  var cacheKey = "active_clients_grouped";
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    Logger.log("Cache get error for active clients: " + err);
+  }
+
   try {
     var config = _getSetupConfig();
     var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
@@ -340,10 +361,14 @@ function getActiveClientsGrouped() {
       }
     }
     
-    return {
+    var result = {
       LOCAL: localClients.sort(),
       OUTSTATION: outstationClients.sort()
     };
+    
+    // Cache for 30 minutes (1800 seconds)
+    _setCachedData(cacheKey, result, 1800);
+    return result;
   } catch (e) {
     _logError("getActiveClientsGrouped", e, "");
     return { LOCAL: [], OUTSTATION: [] };
@@ -353,45 +378,51 @@ function getActiveClientsGrouped() {
 // Get active products list, resize matrix columns, verify client row, and fetch prices
 function getProductPricingData(clientType, clientName) {
   try {
-    var setupSs = _getSetupSpreadsheet();
-    var prodSheetName = (clientType === "OUTSTATION") ? "productsOutstation" : "productsLocal";
-    var prodSheet = setupSs.getSheetByName(prodSheetName);
-    var activeProducts = [];
-    
-    if (prodSheet) {
-      var lastRow = prodSheet.getLastRow();
-      if (lastRow > 0) {
-        var values = prodSheet.getRange(1, 1, lastRow, 1).getValues();
-        for (var i = 0; i < values.length; i++) {
-          var val = (values[i][0] || "").toString().trim();
-          if (val && val.toLowerCase() !== "product name" && val.toLowerCase() !== "products") {
-            activeProducts.push(val);
+    // 1. Get active products (cached for 15 minutes)
+    var prodCacheKey = "active_products_" + clientType;
+    var activeProducts = _getCachedData(prodCacheKey);
+    if (!activeProducts) {
+      activeProducts = [];
+      var setupSs = _getSetupSpreadsheet();
+      var prodSheetName = (clientType === "OUTSTATION") ? "productsOutstation" : "productsLocal";
+      var prodSheet = setupSs.getSheetByName(prodSheetName);
+      if (prodSheet) {
+        var lastRow = prodSheet.getLastRow();
+        if (lastRow > 0) {
+          var values = prodSheet.getRange(1, 1, lastRow, 1).getValues();
+          for (var i = 0; i < values.length; i++) {
+            var val = (values[i][0] || "").toString().trim();
+            if (val && val.toLowerCase() !== "product name" && val.toLowerCase() !== "products") {
+              activeProducts.push(val);
+            }
           }
         }
       }
+      _setCachedData(prodCacheKey, activeProducts, 900); // 15 mins cache
     }
     
     var config = _getSetupConfig();
     var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
-    var pricingSheet = clientSs.getSheetByName(pricingSheetName);
-    if (!pricingSheet) {
-      pricingSheet = clientSs.insertSheet(pricingSheetName);
-    }
+    var pricingSheet = null;
     
-    var lastRow = pricingSheet.getLastRow();
-    var lastCol = pricingSheet.getLastColumn();
-    var headers = [];
-    
-    if (lastRow === 0 || lastCol === 0) {
-      headers = ["PARTY NAME"];
-      pricingSheet.appendRow(headers);
-      lastRow = 1;
-      lastCol = 1;
-    } else {
-      headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-        return (h || "").toString().trim();
-      });
+    // 2. Get columns/headers (cached for 15 minutes)
+    var headersCacheKey = "pricing_headers_" + clientType;
+    var headers = _getCachedData(headersCacheKey);
+    if (!headers) {
+      pricingSheet = clientSs.getSheetByName(pricingSheetName);
+      if (!pricingSheet) {
+        pricingSheet = clientSs.insertSheet(pricingSheetName);
+      }
+      var lastCol = pricingSheet.getLastColumn();
+      if (lastCol === 0) {
+        headers = ["PARTY NAME"];
+      } else {
+        headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+          return (h || "").toString().trim();
+        });
+      }
+      _setCachedData(headersCacheKey, headers, 900);
     }
     
     // Add missing product columns at the end
@@ -399,38 +430,56 @@ function getProductPricingData(clientType, clientName) {
     for (var i = 0; i < activeProducts.length; i++) {
       var prod = activeProducts[i];
       if (headers.indexOf(prod) === -1) {
+        if (!pricingSheet) {
+          pricingSheet = clientSs.getSheetByName(pricingSheetName);
+        }
+        var lastCol = pricingSheet.getLastColumn();
         pricingSheet.getRange(1, lastCol + 1).setValue(prod);
         headers.push(prod);
-        lastCol++;
         newProductsAdded = true;
       }
     }
     
     if (newProductsAdded) {
-      headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-        return (h || "").toString().trim();
-      });
+      _setCachedData(headersCacheKey, headers, 900);
     }
     
-    // Find or create client row
-    var clientRowIdx = -1;
-    if (lastRow > 1) {
-      var clientNames = pricingSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(function(r) {
-        return (r[0] || "").toString().trim();
-      });
-      clientRowIdx = clientNames.indexOf(clientName);
+    // 3. Get client row index (cached for 15 minutes)
+    var clientsCacheKey = "pricing_clients_" + clientType;
+    var pricingClients = _getCachedData(clientsCacheKey);
+    if (!pricingClients) {
+      if (!pricingSheet) {
+        pricingSheet = clientSs.getSheetByName(pricingSheetName);
+      }
+      var lastRow = pricingSheet.getLastRow();
+      if (lastRow > 1) {
+        pricingClients = pricingSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(function(r) {
+          return (r[0] || "").toString().trim();
+        });
+      } else {
+        pricingClients = [];
+      }
+      _setCachedData(clientsCacheKey, pricingClients, 900);
     }
     
+    var clientRowIdx = pricingClients.indexOf(clientName);
     if (clientRowIdx === -1) {
+      if (!pricingSheet) {
+        pricingSheet = clientSs.getSheetByName(pricingSheetName);
+      }
       pricingSheet.appendRow([clientName]);
-      lastRow++;
-      clientRowIdx = lastRow;
+      pricingClients.push(clientName);
+      _setCachedData(clientsCacheKey, pricingClients, 900);
+      clientRowIdx = pricingClients.length + 1; // row is length + 1 (headers is 1)
     } else {
-      clientRowIdx = clientRowIdx + 2;
+      clientRowIdx = clientRowIdx + 2; // row is index + 2
     }
     
-    // Read prices
-    var rowValues = pricingSheet.getRange(clientRowIdx, 1, 1, lastCol).getValues()[0];
+    // 4. Read prices for the client's row
+    if (!pricingSheet) {
+      pricingSheet = clientSs.getSheetByName(pricingSheetName);
+    }
+    var rowValues = pricingSheet.getRange(clientRowIdx, 1, 1, headers.length).getValues()[0];
     var productPricesList = [];
     
     for (var c = 1; c < headers.length; c++) {
@@ -468,28 +517,43 @@ function saveProductPrices(clientType, clientName, prices) {
       return { ok: false, code: "PRICING_SHEET_NOT_FOUND" };
     }
     
-    var lastRow = pricingSheet.getLastRow();
+    // Use cached headers
+    var headersCacheKey = "pricing_headers_" + clientType;
+    var headers = _getCachedData(headersCacheKey);
     var lastCol = pricingSheet.getLastColumn();
-    if (lastRow === 0 || lastCol === 0) {
-      return { ok: false, code: "PRICING_SHEET_EMPTY" };
+    if (!headers || headers.length !== lastCol) {
+      headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return (h || "").toString().trim();
+      });
+      _setCachedData(headersCacheKey, headers, 900);
     }
     
-    var headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-      return (h || "").toString().trim();
-    });
+    // Use cached clients
+    var clientsCacheKey = "pricing_clients_" + clientType;
+    var pricingClients = _getCachedData(clientsCacheKey);
+    var lastRow = pricingSheet.getLastRow();
+    if (!pricingClients || pricingClients.length !== lastRow - 1) {
+      if (lastRow > 1) {
+        pricingClients = pricingSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(function(r) {
+          return (r[0] || "").toString().trim();
+        });
+      } else {
+        pricingClients = [];
+      }
+      _setCachedData(clientsCacheKey, pricingClients, 900);
+    }
     
-    var clientNames = pricingSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(function(r) {
-      return (r[0] || "").toString().trim();
-    });
-    var clientRowIdx = clientNames.indexOf(clientName);
+    var clientRowIdx = pricingClients.indexOf(clientName);
     if (clientRowIdx === -1) {
       pricingSheet.appendRow([clientName]);
-      lastRow++;
-      clientRowIdx = lastRow;
+      pricingClients.push(clientName);
+      _setCachedData(clientsCacheKey, pricingClients, 900);
+      clientRowIdx = pricingClients.length + 1;
     } else {
       clientRowIdx = clientRowIdx + 2;
     }
     
+    var newColAdded = false;
     for (var prodName in prices) {
       if (!prices.hasOwnProperty(prodName)) continue;
       
@@ -500,14 +564,55 @@ function saveProductPrices(clientType, clientName, prices) {
         headers.push(prodName);
         lastCol++;
         colIdx = lastCol - 1;
+        newColAdded = true;
       }
       
       pricingSheet.getRange(clientRowIdx, colIdx + 1).setValue(priceVal === "" ? "" : parseFloat(priceVal));
+    }
+    
+    if (newColAdded) {
+      _setCachedData(headersCacheKey, headers, 900);
     }
     
     return { ok: true };
   } catch (e) {
     _logError("saveProductPrices", e, JSON.stringify({ clientType: clientType, clientName: clientName }));
     return { ok: false, code: "SERVER_ERROR", message: e.toString() };
+  }
+}
+
+// ── Cache Service Helpers ───────────────────────────────────────────────────
+
+function _getCachedData(key) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get(key);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    Logger.log("Cache read error for key " + key + ": " + e);
+  }
+  return null;
+}
+
+function _setCachedData(key, value, ttlSeconds) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var jsonStr = JSON.stringify(value);
+    if (jsonStr.length < 100000) {
+      cache.put(key, jsonStr, ttlSeconds || 600);
+    }
+  } catch (e) {
+    Logger.log("Cache write error for key " + key + ": " + e);
+  }
+}
+
+function _clearCacheKey(key) {
+  try {
+    var cache = CacheService.getScriptCache();
+    cache.remove(key);
+  } catch (e) {
+    Logger.log("Cache clear error for key " + key + ": " + e);
   }
 }

@@ -15,7 +15,7 @@ export default function DashboardPage() {
         {/* Welcome Header */}
         <div className='text-center space-y-3 mb-10'>
           <h1 className='text-3xl md:text-4xl font-extrabold tracking-tight text-foreground'>
-            Jinali Sales Portal
+            Joymex Sales Portal
           </h1>
           <p className='text-muted-foreground text-sm md:text-base max-w-md mx-auto'>
             Select an action below to manage the master client database or configure product pricing.
