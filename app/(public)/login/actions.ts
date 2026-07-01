@@ -12,7 +12,7 @@ export async function loginAction(
   password: string
 ): Promise<LoginResponse> {
   // Local/Mock Bypass for testing during Form UI Phase
-  if (!API_URL || (email.toLowerCase() === 'sales1@joy.com' && password === 'joy')) {
+  if (!API_URL) {
     await setSessionId('mock_session_id_jinali_sales');
     await setUserId('sales1');
     redirect('/dashboard');
