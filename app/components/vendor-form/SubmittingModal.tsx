@@ -51,6 +51,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 type Status = 'loading' | 'success' | 'error';
 
@@ -96,9 +97,14 @@ export default function SubmittingModal({
     }
   }, [status, onClose]);
 
-  if (!show) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  if (!show || !mounted) return null;
+
+  return createPortal(
     <div className='fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4'>
       <div className='bg-card rounded-xl p-6 max-w-xs w-full shadow-xl border border-border/50 relative animate-in fade-in zoom-in-95 duration-200'>
         {/* ❌ Close button — ONLY success & error */}
@@ -186,6 +192,7 @@ export default function SubmittingModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

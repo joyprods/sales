@@ -1,4 +1,7 @@
 // app/components/vendor-form/ConfirmModal.tsx
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
 export default function ConfirmModal({
   show,
   onClose,
@@ -18,9 +21,14 @@ export default function ConfirmModal({
   cancelLabel?: string;
   variant?: 'success' | 'warning';
 }) {
-  if (!show) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
+  if (!show || !mounted) return null;
+
+  return createPortal(
     <div className='fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4'>
       <div className='bg-card rounded-xl p-6 max-w-sm w-full shadow-xl border border-border/50'>
         {/* Icon — centered */}
@@ -90,6 +98,7 @@ export default function ConfirmModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
