@@ -419,6 +419,8 @@ export default function ProductPricesForm() {
               ? 'success'
               : 'error'
         }
+        loadingTitle="Saving Prices..."
+        title="Prices Saved"
         message={submitMessage}
         onClose={() => setSubmitStatus('idle')}
       />

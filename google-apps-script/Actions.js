@@ -494,30 +494,7 @@ function getProductPricingData(clientType, clientName) {
       _setCachedData(clientsCacheKey, pricingClients, 900);
     }
     
-    // Auto-populate all active clients of this type to support editing directly in Google Sheets
-    var activeClientsGrouped = getActiveClientsGrouped();
-    var activeClientsOfType = (clientType === "OUTSTATION") ? activeClientsGrouped.OUTSTATION : activeClientsGrouped.LOCAL;
-    var missingClients = [];
-    
-    for (var i = 0; i < activeClientsOfType.length; i++) {
-      var ac = activeClientsOfType[i];
-      if (pricingClients.indexOf(ac) === -1) {
-        missingClients.push(ac);
-      }
-    }
-    
-    if (missingClients.length > 0) {
-      if (!pricingSheet) {
-        pricingSheet = clientSs.getSheetByName(pricingSheetName);
-      }
-      lastRow = pricingSheet.getLastRow();
-      pricingSheet.getRange(lastRow + 1, 1, missingClients.length, 1).setValues(
-        missingClients.map(function(c) { return [c]; })
-      );
-      
-      pricingClients = pricingClients.concat(missingClients);
-      _setCachedData(clientsCacheKey, pricingClients, 900);
-    }
+
     
     var clientRowIdx = pricingClients.indexOf(clientName);
     if (clientRowIdx === -1) {

@@ -59,12 +59,16 @@ export default function SubmittingModal({
   show,
   status,
   message,
-  onClose
+  onClose,
+  title,
+  loadingTitle
 }: {
   show: boolean;
   status: Status;
   message?: string;
   onClose?: () => void;
+  title?: string;
+  loadingTitle?: string;
 }) {
   const messages = [
     'Validating details…',
@@ -129,7 +133,7 @@ export default function SubmittingModal({
               </div>
 
               <h3 className='text-base font-medium text-foreground'>
-                Submitting…
+                {loadingTitle || 'Submitting…'}
               </h3>
 
               <p className='text-xs text-muted-foreground text-center'>
@@ -158,7 +162,7 @@ export default function SubmittingModal({
               </div>
 
               <h3 className='text-base font-semibold text-foreground'>
-                Order Submitted
+                {title || 'Order Submitted'}
               </h3>
 
               <p className='text-xs text-muted-foreground text-center'>
