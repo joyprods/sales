@@ -235,6 +235,8 @@ function createClient(data) {
     _clearCacheKey("client_list_poc");
     _clearCacheKey("pricing_clients_LOCAL");
     _clearCacheKey("pricing_clients_OUTSTATION");
+    _clearCacheKey("all_pricing_data_v3_LOCAL");
+    _clearCacheKey("all_pricing_data_v3_OUTSTATION");
   } catch (cacheErr) {
     Logger.log("Cache bust error: " + cacheErr);
   }

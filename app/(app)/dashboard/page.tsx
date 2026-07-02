@@ -8,6 +8,14 @@ import { UserPlus, IndianRupee, ArrowLeft } from 'lucide-react';
 
 export default function DashboardPage() {
   const [activeView, setActiveView] = useState<'home' | 'client' | 'prices'>('home');
+  const [initialClient, setInitialClient] = useState<string>('');
+  const [initialClientType, setInitialClientType] = useState<'LOCAL' | 'OUTSTATION'>('LOCAL');
+
+  const handleClientAdded = (partyName: string, clientType: 'LOCAL' | 'OUTSTATION') => {
+    setInitialClient(partyName);
+    setInitialClientType(clientType);
+    setActiveView('prices');
+  };
 
   if (activeView === 'home') {
     return (
@@ -27,7 +35,11 @@ export default function DashboardPage() {
           
           {/* Card 1: Add New Client */}
           <button
-            onClick={() => setActiveView('client')}
+            onClick={() => {
+              setInitialClient('');
+              setInitialClientType('LOCAL');
+              setActiveView('client');
+            }}
             className='group text-left card p-8 border border-border/60 hover:border-primary/40 hover:shadow-md transition-all duration-300 cursor-pointer space-y-6 focus:outline-none focus:ring-2 focus:ring-primary/20'
           >
             <div className='w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center transition-transform duration-300 group-hover:scale-110'>
@@ -49,7 +61,11 @@ export default function DashboardPage() {
 
           {/* Card 2: Add Product Prices */}
           <button
-            onClick={() => setActiveView('prices')}
+            onClick={() => {
+              setInitialClient('');
+              setInitialClientType('LOCAL');
+              setActiveView('prices');
+            }}
             className='group text-left card p-8 border border-border/60 hover:border-primary/40 hover:shadow-md transition-all duration-300 cursor-pointer space-y-6 focus:outline-none focus:ring-2 focus:ring-primary/20'
           >
             <div className='w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center transition-transform duration-300 group-hover:scale-110'>
@@ -94,11 +110,11 @@ export default function DashboardPage() {
       {/* Render selected view */}
       {activeView === 'client' ? (
         <div className='animate-in fade-in duration-300'>
-          <ClientForm />
+          <ClientForm onSuccess={handleClientAdded} />
         </div>
       ) : (
         <div className='animate-in fade-in duration-300'>
-          <ProductPricesForm />
+          <ProductPricesForm initialClient={initialClient} initialClientType={initialClientType} />
         </div>
       )}
     </div>

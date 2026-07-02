@@ -14,9 +14,15 @@ import {
 import SearchableSelect from '../SearchableSelect';
 import SubmittingModal from '../vendor-form/SubmittingModal';
 
-export default function ProductPricesForm() {
-  const [clientType, setClientType] = useState<'LOCAL' | 'OUTSTATION'>('LOCAL');
-  const [selectedClient, setSelectedClient] = useState<string>('');
+export default function ProductPricesForm({
+  initialClient = '',
+  initialClientType = 'LOCAL'
+}: {
+  initialClient?: string;
+  initialClientType?: 'LOCAL' | 'OUTSTATION';
+}) {
+  const [clientType, setClientType] = useState<'LOCAL' | 'OUTSTATION'>(initialClientType);
+  const [selectedClient, setSelectedClient] = useState<string>(initialClient);
   
   // Pricing matrix states loaded all at once
   const [productsList, setProductsList] = useState<string[]>([]);
@@ -35,11 +41,20 @@ export default function ProductPricesForm() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState<string>('');
 
+  // Sync props to state if they change
+  useEffect(() => {
+    if (initialClientType) {
+      setClientType(initialClientType);
+    }
+    if (initialClient) {
+      setSelectedClient(initialClient);
+    }
+  }, [initialClient, initialClientType]);
+
   // 1. Fetch entire pricing matrix on mount and tab switch
   useEffect(() => {
     async function loadAllPricingData() {
       setIsLoadingAll(true);
-      setSelectedClient('');
       setUpdatedPrices({});
       setSearchQuery('');
       setSelectedCategory('All Categories');
@@ -58,6 +73,14 @@ export default function ProductPricesForm() {
           setPriceMap(data.priceMap || {});
           setCategoriesMap(data.categories || {});
           setMinPricesMap(data.minPrices || {});
+          
+          setSelectedClient(prev => {
+            const list = data.clients || [];
+            if (prev && list.includes(prev)) {
+              return prev;
+            }
+            return '';
+          });
         } else {
           throw new Error(data.message || 'Invalid product pricing data returned');
         }

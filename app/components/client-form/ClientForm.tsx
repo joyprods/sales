@@ -95,7 +95,11 @@ const STEPS = [
   { id: 3, name: 'Financials', icon: '💳' }
 ];
 
-export default function ClientForm() {
+export default function ClientForm({
+  onSuccess
+}: {
+  onSuccess?: (partyName: string, clientType: 'LOCAL' | 'OUTSTATION') => void;
+}) {
   const [currentStep, setCurrentStep] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -404,15 +408,20 @@ export default function ClientForm() {
       }
 
       setSubmitStatus('success');
-      setSubmitMessage('Client registered successfully in the Google Sheet!');
+      setSubmitMessage('Client registered successfully in the Google Sheet! Redirecting to pricing...');
       
-      // Reset form after successful submission
+      // Reset form and redirect after successful submission
       setTimeout(() => {
+        const clientName = form.partyName;
+        const cType = form.localOrOutstation as 'LOCAL' | 'OUTSTATION';
         setForm(EMPTY_FORM);
         setFieldErrors({});
         setCurrentStep(0);
         setSubmitStatus('idle');
-      }, 3500);
+        if (onSuccess) {
+          onSuccess(clientName, cType);
+        }
+      }, 2000);
     } catch (err: any) {
       setSubmitStatus('error');
       setSubmitMessage(err.message || 'Failed to save client details. Please try again.');
