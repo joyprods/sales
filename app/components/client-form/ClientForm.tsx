@@ -1123,6 +1123,14 @@ export default function ClientForm({
               ? 'success'
               : 'error'
         }
+        title="Client Added Successfully"
+        loadingTitle="Registering Client..."
+        messages={[
+          'Validating details…',
+          'Adding client to Google Sheets...',
+          'Updating client database...',
+          'Finalizing…'
+        ]}
         message={submitMessage}
         onClose={() => setSubmitStatus('idle')}
       />
