@@ -136,18 +136,14 @@ function updateLastOrderDates() {
     
     if (lastOrderDate) {
       dateValues.push([lastOrderDate]);
-      var rowNum = i + 3; // Row numbers on spreadsheet are 1-based and data starts on row 3
-      daysFormulaValues.push(["=IF(ISBLANK(" + dateColLetter + rowNum + '), "", TODAY() - ' + dateColLetter + rowNum + ")"]);
     } else {
       dateValues.push([""]);
-      daysFormulaValues.push([""]);
     }
   }
   
   // Write back in batch
   if (dateValues.length > 0) {
     clientSheet.getRange(3, lastOrderDateCol, dateValues.length, 1).setValues(dateValues);
-    clientSheet.getRange(3, daysSinceCol, daysFormulaValues.length, 1).setValues(daysFormulaValues);
   }
   
   Logger.log("Finished updating last order dates for " + clientRows.length + " clients.");
