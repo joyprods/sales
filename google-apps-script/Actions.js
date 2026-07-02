@@ -106,8 +106,9 @@ function createClient(data) {
 
   // Map incoming JSON keys to column headers dynamically
   var newRow = [];
-  for (var c = 0; c < headers.length; c++) {
-    var header = (headers[c] || "").toString().trim().toUpperCase();
+  var maxCols = Math.max(headers.length, 36);
+  for (var c = 0; c < maxCols; c++) {
+    var header = c < headers.length ? (headers[c] || "").toString().trim().toUpperCase() : "";
     var val = "";
     
     switch (header) {
@@ -204,8 +205,16 @@ function createClient(data) {
       case "FREIGHT TO BE ADDED? Y/N":
         val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
         break;
+      case "LOCAL / OUTSTATION":
+      case "LOCAL/OUTSTATION":
+        val = data.localOrOutstation || "";
+        break;
       default:
-        val = "";
+        if (c === 35) { // 36th column (AJ) is index 35
+          val = data.localOrOutstation || "";
+        } else {
+          val = "";
+        }
     }
     newRow.push(val);
   }

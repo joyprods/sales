@@ -69,6 +69,7 @@ const EMPTY_FORM = {
   area: '',
   customerType: 'HORECA',
   class: 'PB',
+  localOrOutstation: 'LOCAL',
   billingAddress: '',
   gstNo: '',
   googleLocationLinks: '',
@@ -310,6 +311,7 @@ export default function ClientForm() {
       if (!form.area) errors.area = 'Area selection is required';
       if (!form.customerType) errors.customerType = 'Customer type is required';
       if (!form.class) errors.class = 'Class selection is required';
+      if (!form.localOrOutstation) errors.localOrOutstation = 'Local/Outstation selection is required';
       if (!form.billingAddress.trim()) errors.billingAddress = 'Billing address is required';
       if (!form.shippingAddress.trim()) errors.shippingAddress = 'Shipping address is required';
       
@@ -827,8 +829,24 @@ export default function ClientForm() {
                 <FieldError field='class' />
               </div>
 
+              <div className='form-group'>
+                <label className='label'>Client Type (Local / Outstation) *</label>
+                <SearchableSelect
+                  value={form.localOrOutstation}
+                  options={['LOCAL', 'OUTSTATION']}
+                  placeholder='Select type...'
+                  emptyLabel='Select Local/Outstation'
+                  label='Local/Outstation'
+                  onChange={(val) => {
+                    setForm((p) => ({ ...p, localOrOutstation: val }));
+                    clearError('localOrOutstation');
+                  }}
+                />
+                <FieldError field='localOrOutstation' />
+              </div>
+
               {/* GSTIN field is always visible, mandatory only for PB Class */}
-              <div className='form-group md:col-span-2'>
+              <div className='form-group'>
                 <label className='label font-semibold text-primary'>GST Number {form.class === 'PB' ? '*' : ''}</label>
                 <input
                   name='gstNo'
