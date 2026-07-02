@@ -8,14 +8,17 @@ import SubmittingModal from '../vendor-form/SubmittingModal';
 
 // ── Dropdown Constants from Sheet ───────────────────────────────────────────
 const CLIENT_CATEGORIES = [
+  '5 star Hotels',
   'Restaurants & Cafes - Local',
-  'Chain Outlets - Local',
   'Restaurants & Cafes - Outstation',
-  'Chain Outlets - Outstation',
   'HORECA Distributors',
   'Retail Distributors',
-  '5 star Hotels',
-  'Other'
+  'Chain Outlets - Multiple Cities',
+  'Caterers & Banquets',
+  'Private Label',
+  'Corporates',
+  'Chain Outlets - Local',
+  'Others'
 ];
 
 const SALES_POCS = [
@@ -65,7 +68,7 @@ const EMPTY_FORM = {
   // Section 3: Location, Address & Route
   area: '',
   customerType: 'HORECA',
-  class: 'CB',
+  class: 'PB',
   billingAddress: '',
   gstNo: '',
   googleLocationLinks: '',
@@ -802,7 +805,7 @@ export default function ClientForm() {
                 <label className='label'>Customer Type *</label>
                 <SearchableSelect
                   value={form.customerType}
-                  options={['HORECA', 'RETAIL']}
+                  options={['HORECA', 'RETAIL', 'Others']}
                   placeholder='Search type...'
                   emptyLabel='Select Customer Type'
                   label='Customer Type'
