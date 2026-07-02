@@ -223,7 +223,7 @@ function createClient(data) {
   
   // Dynamically sync client name to the correct pricing matrix sheet on creation
   try {
-    var clientType = _getClientTypeFromArea(data.area);
+    var clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
     syncClientToPricingSheet(data.partyName, clientType);
   } catch (syncErr) {
     _logError("createClientSync", syncErr, data.partyName);
