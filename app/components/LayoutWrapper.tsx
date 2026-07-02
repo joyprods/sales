@@ -40,7 +40,7 @@ export default function LayoutWrapper({
                 {vendorName}
               </h1>
               <p className='text-xs text-foreground/70 font-medium'>
-                Sales Portal
+                Client Portal
               </p>
             </div>
           </div>

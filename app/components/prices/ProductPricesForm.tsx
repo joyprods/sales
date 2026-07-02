@@ -8,7 +8,8 @@ import {
   Search, 
   Save, 
   Info, 
-  HelpCircle 
+  HelpCircle,
+  Filter
 } from 'lucide-react';
 import SearchableSelect from '../SearchableSelect';
 import SubmittingModal from '../vendor-form/SubmittingModal';
@@ -21,11 +22,13 @@ export default function ProductPricesForm() {
   const [productsList, setProductsList] = useState<string[]>([]);
   const [clientsList, setClientsList] = useState<string[]>([]);
   const [priceMap, setPriceMap] = useState<Record<string, Record<string, number>>>({});
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({});
   const [isLoadingAll, setIsLoadingAll] = useState<boolean>(false);
   
   // Local input prices states
   const [updatedPrices, setUpdatedPrices] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   // Modal / Feedback states
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -38,6 +41,7 @@ export default function ProductPricesForm() {
       setSelectedClient('');
       setUpdatedPrices({});
       setSearchQuery('');
+      setSelectedCategory('ALL');
       try {
         const res = await fetch(`/api/prices?action=getAllPrices&clientType=${clientType}`);
         if (res.status === 401) {
@@ -51,6 +55,7 @@ export default function ProductPricesForm() {
           setProductsList(data.products || []);
           setClientsList(data.clients || []);
           setPriceMap(data.priceMap || {});
+          setCategoriesMap(data.categories || {});
         } else {
           throw new Error(data.message || 'Invalid product pricing data returned');
         }
@@ -190,9 +195,19 @@ export default function ProductPricesForm() {
     }
   }, []);
 
-  // Filter products based on search query
+  // Extract unique categories from productsList using categoriesMap
+  const uniqueCategories = Array.from(
+    new Set(
+      productsList.map((prodName) => categoriesMap[prodName] || 'Uncategorized')
+    )
+  ).sort();
+
+  // Filter products based on search query and category selection
   const filteredProducts = productsList.filter((prodName) => {
-    return prodName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = prodName.toLowerCase().includes(searchQuery.toLowerCase());
+    const category = categoriesMap[prodName] || 'Uncategorized';
+    const matchesCategory = selectedCategory === 'ALL' || category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
   return (
@@ -266,22 +281,47 @@ export default function ProductPricesForm() {
         <form onSubmit={handleSavePrices} className='space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300'>
           
           {/* Filters & Search Header (Sticky at top below layout header) */}
-          <div className='sticky top-[73px] md:top-[89px] z-20 card py-4 px-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-sm backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border border-border/70 transition-all duration-200'>
-            {/* Search Input */}
-            <div className='relative flex-1 max-w-md'>
-              <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={18} />
-              <input
-                type='text'
-                placeholder='Search products by name...'
-                className='input pl-10 h-10 text-sm'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          <div className='sticky top-[73px] md:top-[89px] z-20 card py-4 px-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-sm backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border border-border/70 transition-all duration-200'>
+            {/* Search & Category Inputs */}
+            <div className='flex flex-col sm:flex-row items-stretch gap-3 flex-1 max-w-2xl'>
+              {/* Search Input */}
+              <div className='relative flex-1'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={18} />
+                <input
+                  type='text'
+                  placeholder='Search products...'
+                  className='input pl-10 h-10 text-sm w-full'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Category Dropdown */}
+              <div className='relative w-full sm:w-60 shrink-0 font-medium'>
+                <Filter className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={16} />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className='input pl-10 pr-8 h-10 text-sm cursor-pointer bg-white dark:bg-slate-900 font-semibold w-full appearance-none border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20'
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24' width='16' height='16' xmlns='http://www.w3.org/2000/svg'><path d='m6 9 6 6 6-6'/></svg>")`,
+                    backgroundPosition: 'right 12px center',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                >
+                  <option value='ALL'>All Categories</option>
+                  {uniqueCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Sticky Top Action Buttons */}
-            <div className='flex items-center justify-between sm:justify-end gap-3 shrink-0'>
-              <div className='hidden lg:flex items-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800/40 px-3 py-2 rounded-lg border border-border/50 font-medium'>
+            <div className='flex items-center justify-between md:justify-end gap-3 shrink-0'>
+              <div className='hidden sm:flex items-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800/40 px-3 py-2 rounded-lg border border-border/50 font-medium'>
                 <span>{filteredProducts.length} active products</span>
               </div>
               <button
@@ -320,7 +360,13 @@ export default function ProductPricesForm() {
                     >
                       {/* Product Info */}
                       <div className='flex items-start justify-between gap-3'>
-                        <div className='space-y-1'>
+                        <div className='space-y-2.5 w-full'>
+                          {/* Category Badge */}
+                          <div className='flex'>
+                            <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20 shadow-sm'>
+                              📁 {categoriesMap[prodName] || 'Uncategorized'}
+                            </span>
+                          </div>
                           <h4 className='font-bold text-foreground text-sm md:text-base leading-tight'>
                             {prodName}
                           </h4>

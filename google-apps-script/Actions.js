@@ -850,7 +850,7 @@ function _getSourceActiveClientsGrouped() {
 
 // Fetch all product price matrix data for a specific category (Local/Outstation) at once
 function getAllPricingData(clientType) {
-  var cacheKey = "all_pricing_data_" + clientType;
+  var cacheKey = "all_pricing_data_v2_" + clientType;
   try {
     var cached = _getCachedData(cacheKey);
     if (cached) {
@@ -866,13 +866,13 @@ function getAllPricingData(clientType) {
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
     var pricingSheet = clientSs.getSheetByName(pricingSheetName);
     if (!pricingSheet) {
-      return { ok: true, products: [], clients: [], priceMap: {} };
+      return { ok: true, products: [], clients: [], priceMap: {}, categories: {} };
     }
     
     var lastRow = pricingSheet.getLastRow();
     var lastCol = pricingSheet.getLastColumn();
     if (lastRow <= 1 || lastCol <= 1) {
-      return { ok: true, products: [], clients: [], priceMap: {} };
+      return { ok: true, products: [], clients: [], priceMap: {}, categories: {} };
     }
     
     var gridValues = pricingSheet.getRange(1, 1, lastRow, lastCol).getValues();
@@ -909,12 +909,38 @@ function getAllPricingData(clientType) {
         }
       }
     }
+
+    // Fetch product category mapping from setup sheet (Column E / index 4)
+    var categoriesMap = {};
+    try {
+      var setupSs = _getSetupSpreadsheet();
+      var prodSheetName = (clientType === "OUTSTATION") ? "productsOutstation" : "productsLocal";
+      var prodSheet = setupSs.getSheetByName(prodSheetName);
+      if (prodSheet) {
+        var prodLastRow = prodSheet.getLastRow();
+        var prodLastCol = prodSheet.getLastColumn();
+        if (prodLastRow > 0 && prodLastCol >= 1) {
+          var numCols = Math.min(prodLastCol, 5);
+          var prodValues = prodSheet.getRange(1, 1, prodLastRow, numCols).getValues();
+          for (var i = 0; i < prodValues.length; i++) {
+            var pName = (prodValues[i][0] || "").toString().trim();
+            var pCat = (numCols >= 5) ? (prodValues[i][4] || "").toString().trim() : "";
+            if (pName && pName.toLowerCase() !== "product name" && pName.toLowerCase() !== "products") {
+              categoriesMap[pName] = pCat || "Uncategorized";
+            }
+          }
+        }
+      }
+    } catch (eCat) {
+      Logger.log("Error loading product categories: " + eCat);
+    }
     
     var result = {
       ok: true,
       products: products,
       clients: clients.sort(),
-      priceMap: priceMap
+      priceMap: priceMap,
+      categories: categoriesMap
     };
     
     _setCachedData(cacheKey, result, 900);
