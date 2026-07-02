@@ -229,7 +229,7 @@ export default function ClientForm() {
 
   const validatePan = (val: string) => {
     if (!val) {
-      setError('panNumber', 'PAN number is required');
+      clearError('panNumber');
       return;
     }
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(val)) {
@@ -338,14 +338,8 @@ export default function ClientForm() {
       }
     } 
     else if (stepIdx === 3) {
-      if (!form.panNumber) errors.panNumber = 'PAN number is required';
-      else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(form.panNumber)) {
+      if (form.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(form.panNumber)) {
         errors.panNumber = 'Invalid PAN structure';
-      }
-
-      if (!form.salesPocContactNo) errors.salesPocContactNo = 'Sales POC contact is required';
-      else if (!/^\d{6,15}$/.test(form.salesPocContactNo)) {
-        errors.salesPocContactNo = 'Must be between 6 and 15 digits';
       }
 
       if (!form.creditType) errors.creditType = 'Credit type is required';
@@ -946,7 +940,7 @@ export default function ClientForm() {
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div className='form-group'>
-                <label className='label'>PAN Number *</label>
+                <label className='label'>PAN Number</label>
                 <input
                   name='panNumber'
                   maxLength={10}
@@ -961,24 +955,6 @@ export default function ClientForm() {
                   onBlur={() => validatePan(form.panNumber)}
                 />
                 <FieldError field='panNumber' />
-              </div>
-
-              <div className='form-group'>
-                <label className='label'>Sales POC Contact No *</label>
-                <input
-                  name='salesPocContactNo'
-                  maxLength={15}
-                  placeholder='Sales POC contact number'
-                  className={`input ${fieldErrors.salesPocContactNo ? 'border-destructive' : ''}`}
-                  value={form.salesPocContactNo}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/\D/g, '');
-                    setForm((p) => ({ ...p, salesPocContactNo: clean }));
-                    clearError('salesPocContactNo');
-                  }}
-                  onBlur={() => validatePhone('salesPocContactNo', form.salesPocContactNo)}
-                />
-                <FieldError field='salesPocContactNo' />
               </div>
 
               <div className='form-group'>
