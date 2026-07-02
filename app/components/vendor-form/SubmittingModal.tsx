@@ -185,7 +185,7 @@ export default function SubmittingModal({
                 Submission Failed
               </h3>
 
-              <p className='text-xs text-muted-foreground text-center'>
+              <p className='text-xs text-muted-foreground text-center whitespace-pre-line'>
                 {message || 'Something went wrong.'}
               </p>
             </>

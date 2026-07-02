@@ -23,12 +23,13 @@ export default function ProductPricesForm() {
   const [clientsList, setClientsList] = useState<string[]>([]);
   const [priceMap, setPriceMap] = useState<Record<string, Record<string, number>>>({});
   const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({});
+  const [minPricesMap, setMinPricesMap] = useState<Record<string, number>>({});
   const [isLoadingAll, setIsLoadingAll] = useState<boolean>(false);
   
   // Local input prices states
   const [updatedPrices, setUpdatedPrices] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
 
   // Modal / Feedback states
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -41,7 +42,7 @@ export default function ProductPricesForm() {
       setSelectedClient('');
       setUpdatedPrices({});
       setSearchQuery('');
-      setSelectedCategory('ALL');
+      setSelectedCategory('All Categories');
       try {
         const res = await fetch(`/api/prices?action=getAllPrices&clientType=${clientType}`);
         if (res.status === 401) {
@@ -56,6 +57,7 @@ export default function ProductPricesForm() {
           setClientsList(data.clients || []);
           setPriceMap(data.priceMap || {});
           setCategoriesMap(data.categories || {});
+          setMinPricesMap(data.minPrices || {});
         } else {
           throw new Error(data.message || 'Invalid product pricing data returned');
         }
@@ -106,6 +108,27 @@ export default function ProductPricesForm() {
   const handleSavePrices = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient) return;
+
+    // Validate min prices
+    const invalidProducts: string[] = [];
+    for (const prodName in updatedPrices) {
+      if (updatedPrices.hasOwnProperty(prodName)) {
+        const rawVal = updatedPrices[prodName].trim();
+        if (rawVal !== '') {
+          const valNum = parseFloat(rawVal);
+          const minP = minPricesMap[prodName];
+          if (minP !== undefined && minP !== null && valNum < minP) {
+            invalidProducts.push(`• ${prodName}: Minimum ₹${minP} (Entered: ₹${valNum})`);
+          }
+        }
+      }
+    }
+
+    if (invalidProducts.length > 0) {
+      setSubmitStatus('error');
+      setSubmitMessage(`The following product prices are lower than their minimum allowed price:\n\n${invalidProducts.join('\n')}`);
+      return;
+    }
 
     setSubmitStatus('loading');
     setSubmitMessage(`Saving custom prices for ${selectedClient}...`);
@@ -206,7 +229,7 @@ export default function ProductPricesForm() {
   const filteredProducts = productsList.filter((prodName) => {
     const matchesSearch = prodName.toLowerCase().includes(searchQuery.toLowerCase());
     const category = categoriesMap[prodName] || 'Uncategorized';
-    const matchesCategory = selectedCategory === 'ALL' || category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All Categories' || category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -296,26 +319,16 @@ export default function ProductPricesForm() {
                 />
               </div>
 
-              {/* Category Dropdown */}
-              <div className='relative w-full sm:w-60 shrink-0 font-medium'>
-                <Filter className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground' size={16} />
-                <select
+              {/* Searchable Category Dropdown */}
+              <div className='w-full sm:w-64 shrink-0 font-medium'>
+                <SearchableSelect
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className='input pl-10 pr-8 h-10 text-sm cursor-pointer bg-white dark:bg-slate-900 font-semibold w-full appearance-none border border-border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20'
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24' width='16' height='16' xmlns='http://www.w3.org/2000/svg'><path d='m6 9 6 6 6-6'/></svg>")`,
-                    backgroundPosition: 'right 12px center',
-                    backgroundRepeat: 'no-repeat',
-                  }}
-                >
-                  <option value='ALL'>All Categories</option>
-                  {uniqueCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                  options={['All Categories', ...uniqueCategories]}
+                  placeholder='Search category...'
+                  emptyLabel='No category found'
+                  label='Category'
+                  onChange={(val) => setSelectedCategory(val)}
+                />
               </div>
             </div>
 
@@ -352,6 +365,9 @@ export default function ProductPricesForm() {
                 {filteredProducts.map((prodName) => {
                   const currentPrice = priceMap[selectedClient]?.[prodName];
                   const newPrice = updatedPrices[prodName] || '';
+                  const minPrice = minPricesMap[prodName];
+                  const hasMinPrice = minPrice !== undefined && minPrice !== null;
+                  const isInvalid = hasMinPrice && newPrice !== '' && parseFloat(newPrice) < minPrice;
 
                   return (
                     <div 
@@ -381,6 +397,14 @@ export default function ProductPricesForm() {
                               No previous price set
                             </p>
                           )}
+                          
+                          {/* Minimum price display */}
+                          {hasMinPrice && (
+                            <p className='text-xs font-bold text-rose-500/90 flex items-center gap-1 mt-1'>
+                              <span>⚠️ Min Price:</span>
+                              <span className='font-bold text-rose-700 dark:text-rose-400'>₹{minPrice}</span>
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -394,7 +418,9 @@ export default function ProductPricesForm() {
                             type='text'
                             inputMode='decimal'
                             placeholder={currentPrice !== undefined && currentPrice !== null ? currentPrice.toString() : 'Set price...'}
-                            className='input pl-8 pr-12 font-semibold text-sm'
+                            className={`input pl-8 pr-12 font-semibold text-sm ${
+                              isInvalid ? 'border-rose-500 text-rose-600 focus:ring-rose-200 focus:border-rose-500 dark:border-rose-800' : ''
+                            }`}
                             value={newPrice}
                             onChange={(e) => handlePriceChange(prodName, e.target.value)}
                           />
@@ -408,6 +434,11 @@ export default function ProductPricesForm() {
                             </button>
                           )}
                         </div>
+                        {isInvalid && (
+                          <p className='text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1.5 animate-in fade-in slide-in-from-top-1 duration-150'>
+                            Price cannot be less than ₹{minPrice}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );

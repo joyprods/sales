@@ -850,7 +850,7 @@ function _getSourceActiveClientsGrouped() {
 
 // Fetch all product price matrix data for a specific category (Local/Outstation) at once
 function getAllPricingData(clientType) {
-  var cacheKey = "all_pricing_data_v2_" + clientType;
+  var cacheKey = "all_pricing_data_v3_" + clientType;
   try {
     var cached = _getCachedData(cacheKey);
     if (cached) {
@@ -866,13 +866,13 @@ function getAllPricingData(clientType) {
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
     var pricingSheet = clientSs.getSheetByName(pricingSheetName);
     if (!pricingSheet) {
-      return { ok: true, products: [], clients: [], priceMap: {}, categories: {} };
+      return { ok: true, products: [], clients: [], priceMap: {}, categories: {}, minPrices: {} };
     }
     
     var lastRow = pricingSheet.getLastRow();
     var lastCol = pricingSheet.getLastColumn();
     if (lastRow <= 1 || lastCol <= 1) {
-      return { ok: true, products: [], clients: [], priceMap: {}, categories: {} };
+      return { ok: true, products: [], clients: [], priceMap: {}, categories: {}, minPrices: {} };
     }
     
     var gridValues = pricingSheet.getRange(1, 1, lastRow, lastCol).getValues();
@@ -910,8 +910,9 @@ function getAllPricingData(clientType) {
       }
     }
 
-    // Fetch product category mapping from setup sheet (Column E / index 4)
+    // Fetch product category (Col E / index 4) and min price (Col S / index 18) mapping from setup sheet
     var categoriesMap = {};
+    var minPricesMap = {};
     try {
       var setupSs = _getSetupSpreadsheet();
       var prodSheetName = (clientType === "OUTSTATION") ? "productsOutstation" : "productsLocal";
@@ -920,19 +921,25 @@ function getAllPricingData(clientType) {
         var prodLastRow = prodSheet.getLastRow();
         var prodLastCol = prodSheet.getLastColumn();
         if (prodLastRow > 0 && prodLastCol >= 1) {
-          var numCols = Math.min(prodLastCol, 5);
+          var numCols = Math.min(prodLastCol, 19);
           var prodValues = prodSheet.getRange(1, 1, prodLastRow, numCols).getValues();
           for (var i = 0; i < prodValues.length; i++) {
             var pName = (prodValues[i][0] || "").toString().trim();
             var pCat = (numCols >= 5) ? (prodValues[i][4] || "").toString().trim() : "";
+            var minPriceVal = (numCols >= 19) ? prodValues[i][18] : "";
+            var minPriceParsed = (minPriceVal !== "" && minPriceVal !== null && !isNaN(minPriceVal)) ? parseFloat(minPriceVal) : null;
+            
             if (pName && pName.toLowerCase() !== "product name" && pName.toLowerCase() !== "products") {
               categoriesMap[pName] = pCat || "Uncategorized";
+              if (minPriceParsed !== null) {
+                minPricesMap[pName] = minPriceParsed;
+              }
             }
           }
         }
       }
     } catch (eCat) {
-      Logger.log("Error loading product categories: " + eCat);
+      Logger.log("Error loading product categories & min prices: " + eCat);
     }
     
     var result = {
@@ -940,7 +947,8 @@ function getAllPricingData(clientType) {
       products: products,
       clients: clients.sort(),
       priceMap: priceMap,
-      categories: categoriesMap
+      categories: categoriesMap,
+      minPrices: minPricesMap
     };
     
     _setCachedData(cacheKey, result, 900);
