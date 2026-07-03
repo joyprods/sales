@@ -67,6 +67,7 @@ const EMPTY_FORM = {
 
   // Section 3: Location, Address & Route
   area: '',
+  city: '',
   customerType: 'HORECA',
   class: 'PB',
   localOrOutstation: 'LOCAL',
@@ -104,24 +105,39 @@ export default function ClientForm({
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [areasList, setAreasList] = useState<string[]>(AREAS);
+  const [originalAreas, setOriginalAreas] = useState<string[]>([]);
+  const [citiesList, setCitiesList] = useState<string[]>([]);
   
-  // Load dynamic areas on mount
+  // Load dynamic areas and cities on mount
   useEffect(() => {
-    async function loadAreas() {
+    async function loadAreasAndCities() {
       try {
-        const res = await fetch('/api/areas');
-        if (res.status === 401) return; // Skip silently if not logged in
-        if (!res.ok) throw new Error('Failed to fetch areas');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const merged = Array.from(new Set([...AREAS, ...data])).sort();
-          setAreasList(merged);
+        const areasRes = await fetch('/api/areas');
+        if (areasRes.ok) {
+          const areasData = await areasRes.json();
+          if (Array.isArray(areasData)) {
+            const merged = Array.from(new Set([...AREAS, ...areasData])).sort();
+            setAreasList(merged);
+            setOriginalAreas(merged);
+          }
         }
       } catch (err) {
         console.error('Error loading dynamic areas:', err);
       }
+
+      try {
+        const citiesRes = await fetch('/api/cities');
+        if (citiesRes.ok) {
+          const citiesData = await citiesRes.json();
+          if (Array.isArray(citiesData)) {
+            setCitiesList(citiesData.sort());
+          }
+        }
+      } catch (err) {
+        console.error('Error loading dynamic cities:', err);
+      }
     }
-    loadAreas();
+    loadAreasAndCities();
   }, []);
 
   // Submit modal and warning modals states
@@ -313,6 +329,12 @@ export default function ClientForm({
     } 
     else if (stepIdx === 2) {
       if (!form.area) errors.area = 'Area selection is required';
+      
+      const isNewArea = form.area && !originalAreas.includes(form.area);
+      if (isNewArea && !form.city) {
+        errors.city = 'City selection is required for a new area';
+      }
+      
       if (!form.customerType) errors.customerType = 'Customer type is required';
       if (!form.class) errors.class = 'Class selection is required';
       if (!form.localOrOutstation) errors.localOrOutstation = 'Local/Outstation selection is required';
@@ -786,13 +808,21 @@ export default function ClientForm({
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              <div className='form-group md:col-span-2'>
+              <div className='form-group'>
                 <label className='label'>Area *</label>
                 <SearchableSelect
                   value={form.area}
                   onChange={(val) => {
-                    setForm((p) => ({ ...p, area: val }));
+                    setForm((p) => {
+                      const isNew = val && !originalAreas.includes(val);
+                      return {
+                        ...p,
+                        area: val,
+                        city: isNew ? p.city : ''
+                      };
+                    });
                     clearError('area');
+                    clearError('city');
                     if (val && !areasList.includes(val)) {
                       setAreasList((prev) => Array.from(new Set([...prev, val])).sort());
                     }
@@ -805,6 +835,30 @@ export default function ClientForm({
                 />
                 <FieldError field='area' />
               </div>
+
+              {form.area && !originalAreas.includes(form.area) ? (
+                <div className='form-group animate-in fade-in slide-in-from-top-2 duration-200'>
+                  <label className='label font-semibold text-primary'>City for New Area *</label>
+                  <SearchableSelect
+                    value={form.city}
+                    onChange={(val) => {
+                      setForm((p) => ({ ...p, city: val }));
+                      clearError('city');
+                      if (val && !citiesList.includes(val)) {
+                        setCitiesList((prev) => Array.from(new Set([...prev, val])).sort());
+                      }
+                    }}
+                    options={citiesList}
+                    placeholder='Select or type new city...'
+                    emptyLabel='Select City'
+                    label='City'
+                    allowCustom={true}
+                  />
+                  <FieldError field='city' />
+                </div>
+              ) : (
+                <div className='hidden md:block' />
+              )}
 
               <div className='form-group'>
                 <label className='label'>Customer Type *</label>

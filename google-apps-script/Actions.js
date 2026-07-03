@@ -221,6 +221,11 @@ function createClient(data) {
 
   sheet.appendRow(newRow);
   
+  // If a new area and city are provided, ensure they are registered in the Data Sheet
+  if (data.area && data.city) {
+    addNewAreaToDataSheet(data.area, data.city);
+  }
+  
   // Dynamically sync client name to the correct pricing matrix sheet on creation
   try {
     var clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
@@ -967,5 +972,96 @@ function getAllPricingData(clientType) {
   } catch (e) {
     _logError("getAllPricingData", e, clientType);
     return { ok: false, message: e.toString() };
+  }
+}
+
+// Fetch Unique Cities from the Data Sheet (with caching)
+function getCitiesList() {
+  var cacheKey = "cities_list";
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    Logger.log("Cache get error for cities list: " + err);
+  }
+
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName("Data Sheet");
+    if (!sheet) return [];
+    
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    var data = sheet.getRange(2, 5, lastRow - 1, 1).getValues(); // Column E is City
+    var uniqueCities = {};
+    for (var i = 0; i < data.length; i++) {
+      var city = (data[i][0] || "").toString().trim().toUpperCase();
+      if (city) {
+        uniqueCities[city] = true;
+      }
+    }
+    var cities = Object.keys(uniqueCities).sort();
+    
+    try {
+      _setCachedData(cacheKey, cities, 1800); // Cache for 30 minutes
+    } catch (cacheErr) {
+      Logger.log("Cache set error for cities list: " + cacheErr);
+    }
+    
+    return cities;
+  } catch (e) {
+    _logError("getCitiesList", e, "");
+    return [];
+  }
+}
+
+// Add a new Area and City row to the Data Sheet
+function addNewAreaToDataSheet(areaName, cityName) {
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName("Data Sheet");
+    if (!sheet) return false;
+    
+    // Check if this Area already exists to avoid duplicates
+    var lastRow = sheet.getLastRow();
+    var data = [];
+    if (lastRow > 1) {
+      data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    }
+    var searchArea = (areaName || "").toString().trim().toUpperCase();
+    for (var i = 0; i < data.length; i++) {
+      var existingArea = (data[i][0] || "").toString().trim().toUpperCase();
+      if (existingArea === searchArea) {
+        return true;
+      }
+    }
+    
+    // Append to Data Sheet: Column A (Area) and Column E (City)
+    // We construct a row of length 5: [area, "COURIER", "COURIER", "COURIER", city]
+    var newRow = [
+      areaName.toUpperCase().trim(),
+      "COURIER",
+      "COURIER",
+      "COURIER",
+      cityName.toUpperCase().trim()
+    ];
+    sheet.appendRow(newRow);
+    
+    // Bust cached cities list
+    try {
+      _clearCacheKey("cities_list");
+    } catch (cErr) {
+      Logger.log("Cache clear error for cities_list: " + cErr);
+    }
+    
+    return true;
+  } catch (e) {
+    _logError("addNewAreaToDataSheet", e, areaName + " | " + cityName);
+    return false;
   }
 }

@@ -23,6 +23,13 @@ export async function fetchAreas() {
   return result.response_data;
 }
 
+export async function fetchCities() {
+  const result = await apiRequest({
+    type: 'getCities'
+  });
+  return result.response_data;
+}
+
 export async function fetchActiveClientsGrouped() {
   const result = await apiRequest({
     type: 'getActiveClientsGrouped'

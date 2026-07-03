@@ -35,6 +35,9 @@ function doPost(e) {
     } else if (type === "getAreas") {
       var areas = getAreasList();
       result = { ok: true, response_data: areas };
+    } else if (type === "getCities") {
+      var cities = getCitiesList();
+      result = { ok: true, response_data: cities };
     } else if (type === "getActiveClientsGrouped") {
       var clientsGrouped = getActiveClientsGrouped();
       result = { ok: true, response_data: clientsGrouped };
