@@ -22,7 +22,7 @@ function getClientList() {
       return { ok: false, code: "SHEET_NOT_FOUND" };
     }
     
-    var headerRow = 2; // Column headers are on row 2
+    var headerRow = _getHeaderRowIndex(sheet); // Dynamically detect header row (Row 1 or Row 2)
     var lastRow = sheet.getLastRow();
     if (lastRow <= headerRow) {
       return {};
@@ -80,7 +80,7 @@ function createClient(data) {
     return { ok: false, code: "SHEET_NOT_FOUND" };
   }
   
-  var headerRow = 2; // Row 2 holds actual column headers
+  var headerRow = _getHeaderRowIndex(sheet); // Dynamically detect header row (Row 1 or Row 2)
   var lastColumn = sheet.getLastColumn();
   var headers = sheet.getRange(headerRow, 1, 1, lastColumn).getValues()[0];
   
@@ -257,7 +257,7 @@ function getAreasList() {
     var sheet = ss.getSheetByName(config.clientSheetName);
     if (!sheet) return [];
     
-    var headerRow = 2; // Column headers are on row 2
+    var headerRow = _getHeaderRowIndex(sheet); // Dynamically detect header row (Row 1 or Row 2)
     var lastRow = sheet.getLastRow();
     if (lastRow <= headerRow) return [];
     
@@ -815,7 +815,7 @@ function _getSourceActiveClientsGrouped() {
     var sheet = ss.getSheetByName(config.clientSheetName);
     if (!sheet) return { LOCAL: [], OUTSTATION: [] };
     
-    var headerRow = 2;
+    var headerRow = _getHeaderRowIndex(sheet);
     var lastRow = sheet.getLastRow();
     if (lastRow <= headerRow) return { LOCAL: [], OUTSTATION: [] };
     
@@ -1064,4 +1064,31 @@ function addNewAreaToDataSheet(areaName, cityName) {
     _logError("addNewAreaToDataSheet", e, areaName + " | " + cityName);
     return false;
   }
+}
+
+// Dynamically determine the header row index (Row 1 or Row 2) based on key column presence
+function _getHeaderRowIndex(sheet) {
+  try {
+    var maxCols = Math.min(sheet.getLastColumn(), 20);
+    if (maxCols <= 0) return 2; // Default to Row 2
+    
+    var row1Values = sheet.getRange(1, 1, 1, maxCols).getValues()[0];
+    for (var i = 0; i < row1Values.length; i++) {
+      var val = (row1Values[i] || "").toString().trim().toUpperCase();
+      if (val === "PARTY NAME" || val === "CLIENT STATUS") {
+        return 1;
+      }
+    }
+    
+    var row2Values = sheet.getRange(2, 1, 1, maxCols).getValues()[0];
+    for (var i = 0; i < row2Values.length; i++) {
+      var val = (row2Values[i] || "").toString().trim().toUpperCase();
+      if (val === "PARTY NAME" || val === "CLIENT STATUS") {
+        return 2;
+      }
+    }
+  } catch (e) {
+    Logger.log("Error in _getHeaderRowIndex: " + e);
+  }
+  return 2; // Default fallback to Row 2
 }
