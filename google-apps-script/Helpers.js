@@ -17,7 +17,7 @@ function _getSetupConfig() {
   var data = sheet.getDataRange().getValues();
   
   var config = {
-    clientSpreadsheetId: "1a9wF8bAH2-V0zUF_f6l0ZDXmRsMoW7HioD79RgxrZ5I", // Default fallback
+    clientSpreadsheetId: "1prN7HT6Bibl1Pz3_GbnTcdjiPw9GOVZp5BxYR7mRGow", // Default fallback
     clientSheetName: "Client List" // Default fallback
   };
   
