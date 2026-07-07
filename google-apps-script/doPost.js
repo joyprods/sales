@@ -32,12 +32,21 @@ function doPost(e) {
     } else if (type === "createClient") {
       var createResult = createClient(payload.data);
       result = createResult;
+    } else if (type === "getClientDetails") {
+      var details = getClientDetails(payload.partyName);
+      result = details;
+    } else if (type === "updateClient") {
+      var updateResult = updateClient(payload.originalPartyName, payload.data);
+      result = updateResult;
     } else if (type === "getAreas") {
       var areas = getAreasList();
       result = { ok: true, response_data: areas };
     } else if (type === "getCities") {
       var cities = getCitiesList();
       result = { ok: true, response_data: cities };
+    } else if (type === "getClientCategories") {
+      var categories = getClientCategoriesList();
+      result = { ok: true, response_data: categories };
     } else if (type === "getActiveClientsGrouped") {
       var clientsGrouped = getActiveClientsGrouped();
       result = { ok: true, response_data: clientsGrouped };

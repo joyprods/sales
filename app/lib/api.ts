@@ -64,3 +64,27 @@ export async function fetchAllProductPrices(clientType: string) {
   return result;
 }
 
+export async function fetchClientCategories() {
+  const result = await apiRequest({
+    type: 'getClientCategories'
+  });
+  return result.response_data;
+}
+
+export async function fetchClientDetails(partyName: string) {
+  const result = await apiRequest({
+    type: 'getClientDetails',
+    partyName
+  });
+  return result;
+}
+
+export async function updateClientDetails(originalPartyName: string, formData: any) {
+  const result = await apiRequest({
+    type: 'updateClient',
+    originalPartyName,
+    data: formData
+  });
+  return result;
+}
+

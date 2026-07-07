@@ -207,11 +207,11 @@ function createClient(data) {
         break;
       case "LOCAL / OUTSTATION":
       case "LOCAL/OUTSTATION":
-        val = data.localOrOutstation || "";
+        val = "";
         break;
       default:
         if (c === 35) { // 36th column (AJ) is index 35
-          val = data.localOrOutstation || "";
+          val = "";
         } else {
           val = "";
         }
@@ -220,6 +220,26 @@ function createClient(data) {
   }
 
   sheet.appendRow(newRow);
+  var appendedRowIndex = sheet.getLastRow();
+  
+  // Clear the LOCAL / OUTSTATION cell to let the ARRAYFORMULA run
+  try {
+    var localOutstationIndex = -1;
+    for (var i = 0; i < headers.length; i++) {
+      var h = (headers[i] || "").toString().trim().toUpperCase();
+      if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
+        localOutstationIndex = i;
+        break;
+      }
+    }
+    if (localOutstationIndex !== -1) {
+      sheet.getRange(appendedRowIndex, localOutstationIndex + 1).clearContent();
+    } else if (maxCols >= 36) {
+      sheet.getRange(appendedRowIndex, 36).clearContent();
+    }
+  } catch (clearErr) {
+    _logError("createClientClearFormula", clearErr, data.partyName);
+  }
   
   // If a new area and city are provided, ensure they are registered in the Data Sheet
   if (data.area && data.city) {
@@ -227,8 +247,9 @@ function createClient(data) {
   }
   
   // Dynamically sync client name to the correct pricing matrix sheet on creation
+  var clientType = "LOCAL";
   try {
-    var clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
+    clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
     syncClientToPricingSheet(data.partyName, clientType);
   } catch (syncErr) {
     _logError("createClientSync", syncErr, data.partyName);
@@ -246,7 +267,7 @@ function createClient(data) {
     Logger.log("Cache bust error: " + cacheErr);
   }
   
-  return { ok: true, clientId: newClientId };
+  return { ok: true, clientId: newClientId, clientType: clientType };
 }
 
 // Fetch Unique Areas from the Client List sheet
@@ -279,6 +300,447 @@ function getAreasList() {
   } catch (e) {
     _logError("getAreasList", e, "");
     return [];
+  }
+}
+
+// Fetch Unique Client Categories from Data Sheet (Column I or header matching CLIENT CATEGORY)
+function getClientCategoriesList() {
+  var cacheKey = "client_categories_list";
+  var cached = _getCachedData(cacheKey);
+  if (cached) return cached;
+
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var dataSheet = ss.getSheetByName("Data Sheet");
+    if (!dataSheet) return [];
+    
+    var lastRow = dataSheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    var lastCol = dataSheet.getLastColumn();
+    var headers = dataSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    
+    var categoryColIndex = -1;
+    for (var j = 0; j < headers.length; j++) {
+      var headerText = (headers[j] || "").toString().trim().toUpperCase();
+      if (headerText === "CLIENT CATEGORY") {
+        categoryColIndex = j;
+        break;
+      }
+    }
+    
+    if (categoryColIndex === -1) {
+      categoryColIndex = 8; // Column I is index 8
+    }
+    
+    var data = dataSheet.getRange(2, categoryColIndex + 1, lastRow - 1, 1).getValues();
+    var uniqueMap = {};
+    var categoriesList = [];
+    
+    for (var i = 0; i < data.length; i++) {
+      var cat = (data[i][0] || "").toString().trim();
+      if (cat && !uniqueMap[cat]) {
+        uniqueMap[cat] = true;
+        categoriesList.push(cat);
+      }
+    }
+    
+    _setCachedData(cacheKey, categoriesList, 600);
+    return categoriesList;
+  } catch (e) {
+  }
+}
+
+// Fetch details of a specific client from the sheet
+function getClientDetails(partyName) {
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName(config.clientSheetName);
+    if (!sheet) return { ok: false, message: "Sheet not found" };
+
+    var headerRow = _getHeaderRowIndex(sheet);
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+    
+    var partyNameIdx = _findHeaderIndex(headers, "PARTY NAME");
+    if (partyNameIdx === -1) return { ok: false, message: "PARTY NAME column not found" };
+
+    var nameValues = sheet.getRange(headerRow + 1, partyNameIdx + 1, lastRow - headerRow, 1).getValues();
+    var targetRowIndex = -1;
+    for (var i = 0; i < nameValues.length; i++) {
+      if (nameValues[i][0] && nameValues[i][0].toString().trim().toUpperCase() === partyName.trim().toUpperCase()) {
+        targetRowIndex = headerRow + 1 + i;
+        break;
+      }
+    }
+
+    if (targetRowIndex === -1) return { ok: false, message: "Client not found: " + partyName };
+
+    var rowValues = sheet.getRange(targetRowIndex, 1, 1, lastCol).getValues()[0];
+    
+    // Map the row back to the JSON structure expected by the form
+    var clientData = {
+      clientCategory: "",
+      partyName: "",
+      salesPoc: "",
+      hasMsme: "No",
+      msmeNumber: "",
+      contactPersonPurchase: "",
+      contactNumberPurchase: "",
+      emailIdPurchase: "",
+      contactPersonAccounts: "",
+      mobileNumberAccounts: "",
+      emailIdAccounts: "",
+      contactPerson3: "",
+      contactNumber3: "",
+      emailId3: "",
+      area: "",
+      city: "",
+      customerType: "HORECA",
+      class: "PB",
+      localOrOutstation: "LOCAL",
+      billingAddress: "",
+      gstNo: "",
+      googleLocationLinks: "",
+      shippingAddressSame: false,
+      shippingAddress: "",
+      pinCode: "",
+      panNumber: "",
+      salesPocContactNo: "",
+      creditType: "ADVANCE",
+      crmPoc: "P1",
+      secondaryUpperLimitInDays: "",
+      fssaiNumber: "",
+      freightToBeAdded: "No"
+    };
+
+    for (var j = 0; j < headers.length; j++) {
+      var header = (headers[j] || "").toString().trim().toUpperCase();
+      var val = rowValues[j] !== undefined && rowValues[j] !== null ? rowValues[j].toString().trim() : "";
+      
+      switch (header) {
+        case "CLIENT CATEGORY":
+          clientData.clientCategory = val;
+          break;
+        case "PARTY NAME":
+          clientData.partyName = val;
+          break;
+        case "SALES POC":
+          clientData.salesPoc = val;
+          break;
+        case "MSME NUMBER":
+          clientData.msmeNumber = val;
+          clientData.hasMsme = val ? "Yes" : "No";
+          break;
+        case "CONTACT PERSON (PURCHASE)":
+          clientData.contactPersonPurchase = val;
+          break;
+        case "CONTACT NUMBER (PURCHASE)":
+          clientData.contactNumberPurchase = val;
+          break;
+        case "EMAIL ID (PURCHASE)":
+          clientData.emailIdPurchase = val;
+          break;
+        case "CONTACT PERSON (ACCOUNTS)":
+          clientData.contactPersonAccounts = val;
+          break;
+        case "MOBILE NUMBER (ACCOUNTS)":
+          clientData.mobileNumberAccounts = val;
+          break;
+        case "EMAIL ID (ACCOUNTS)":
+          clientData.emailIdAccounts = val;
+          break;
+        case "CONTACT PERSON 3":
+          clientData.contactPerson3 = val;
+          break;
+        case "CONTACT NUMBER":
+          clientData.contactNumber3 = val;
+          break;
+        case "EMAIL ID 3":
+          clientData.emailId3 = val;
+          break;
+        case "AREA":
+          clientData.area = val;
+          break;
+        case "CUSTOMER TYPE (HORECA/RETAIL)":
+          clientData.customerType = val || "HORECA";
+          break;
+        case "CLASS":
+          clientData.class = val || "PB";
+          break;
+        case "BILLING ADDRESS":
+          clientData.billingAddress = val;
+          break;
+        case "GST NO":
+          clientData.gstNo = val;
+          break;
+        case "GOOGLE LOCATION LINKS":
+          clientData.googleLocationLinks = val;
+          break;
+        case "SHIPPING ADDRESS":
+          clientData.shippingAddress = val;
+          break;
+        case "PIN CODE":
+          clientData.pinCode = val;
+          break;
+        case "PAN NUMBER":
+          clientData.panNumber = val;
+          break;
+        case "SALES POC CONTACT NO":
+          clientData.salesPocContactNo = val;
+          break;
+        case "CREDIT TYPE":
+          clientData.creditType = val || "ADVANCE";
+          break;
+        case "CRM POC":
+          clientData.crmPoc = val || "P1";
+          break;
+        case "SECONDARY UPPER LIMIT (IN DAYS)":
+          clientData.secondaryUpperLimitInDays = val;
+          break;
+        case "FSSAI NUMBER":
+          clientData.fssaiNumber = val;
+          break;
+        case "FREIGHT TO BE ADDED? Y/N":
+          clientData.freightToBeAdded = (val === "Y" || val === "Yes") ? "Yes" : "No";
+          break;
+        case "LOCAL / OUTSTATION":
+        case "LOCAL/OUTSTATION":
+          clientData.localOrOutstation = val || "LOCAL";
+          break;
+      }
+    }
+
+    // Determine city:
+    // If city is not directly in the client list, try to lookup city based on area using the Data Sheet
+    if (!clientData.city && clientData.area) {
+      try {
+        var dataSheet = ss.getSheetByName("Data Sheet");
+        if (dataSheet) {
+          var dsLastRow = dataSheet.getLastRow();
+          if (dsLastRow > 1) {
+            var dsData = dataSheet.getRange(2, 1, dsLastRow - 1, 5).getValues();
+            var searchArea = clientData.area.toUpperCase().trim();
+            for (var k = 0; k < dsData.length; k++) {
+              var area = (dsData[k][0] || "").toString().trim().toUpperCase();
+              if (area === searchArea) {
+                clientData.city = (dsData[k][4] || "").toString().trim(); // Column E is City (index 4)
+                break;
+              }
+            }
+          }
+        }
+      } catch (cityErr) {
+        Logger.log("City lookup error for " + clientData.area + ": " + cityErr);
+      }
+    }
+
+    if (clientData.billingAddress === clientData.shippingAddress) {
+      clientData.shippingAddressSame = true;
+    }
+
+    return { ok: true, data: clientData };
+  } catch (e) {
+    _logError("getClientDetails", e, partyName);
+    return { ok: false, message: e.toString() };
+  }
+}
+
+// Update existing client details in place
+function updateClient(originalPartyName, data) {
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var sheet = ss.getSheetByName(config.clientSheetName);
+    if (!sheet) return { ok: false, message: "Sheet not found" };
+
+    var headerRow = _getHeaderRowIndex(sheet);
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+    
+    var partyNameIdx = _findHeaderIndex(headers, "PARTY NAME");
+    if (partyNameIdx === -1) return { ok: false, message: "PARTY NAME column not found" };
+
+    var nameValues = sheet.getRange(headerRow + 1, partyNameIdx + 1, lastRow - headerRow, 1).getValues();
+    var targetRowIndex = -1;
+    for (var i = 0; i < nameValues.length; i++) {
+      if (nameValues[i][0] && nameValues[i][0].toString().trim().toUpperCase() === originalPartyName.trim().toUpperCase()) {
+        targetRowIndex = headerRow + 1 + i;
+        break;
+      }
+    }
+
+    if (targetRowIndex === -1) return { ok: false, message: "Client not found: " + originalPartyName };
+
+    var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
+    var updatedRow = [];
+    var maxCols = Math.max(headers.length, 36);
+    var existingRowValues = sheet.getRange(targetRowIndex, 1, 1, maxCols).getValues()[0];
+
+    for (var c = 0; c < maxCols; c++) {
+      var header = c < headers.length ? (headers[c] || "").toString().trim().toUpperCase() : "";
+      var val = "";
+      
+      switch (header) {
+        case "CLIENT STATUS":
+          val = existingRowValues[c] || "Active";
+          break;
+        case "CLIENT ID":
+          val = existingRowValues[c] || "";
+          break;
+        case "CLIENT CATEGORY":
+          val = data.clientCategory || "";
+          break;
+        case "PARTY NAME":
+          val = data.partyName || "";
+          break;
+        case "SALES POC":
+          val = data.salesPoc || "";
+          break;
+        case "MSME NUMBER":
+          val = (data.hasMsme === "Yes") ? (data.msmeNumber || "") : "";
+          break;
+        case "CONTACT PERSON (PURCHASE)":
+          val = data.contactPersonPurchase || "";
+          break;
+        case "CONTACT NUMBER (PURCHASE)":
+          val = data.contactNumberPurchase || "";
+          break;
+        case "EMAIL ID (PURCHASE)":
+          val = data.emailIdPurchase || "";
+          break;
+        case "CONTACT PERSON (ACCOUNTS)":
+          val = data.contactPersonAccounts || "";
+          break;
+        case "MOBILE NUMBER (ACCOUNTS)":
+          val = data.mobileNumberAccounts || "";
+          break;
+        case "EMAIL ID (ACCOUNTS)":
+          val = data.emailIdAccounts || "";
+          break;
+        case "CONTACT PERSON 3":
+          val = data.contactPerson3 || "";
+          break;
+        case "CONTACT NUMBER":
+          val = data.contactNumber3 || "";
+          break;
+        case "EMAIL ID 3":
+          val = data.emailId3 || "";
+          break;
+        case "AREA":
+          val = data.area || "";
+          break;
+        case "CUSTOMER TYPE (HORECA/RETAIL)":
+          val = data.customerType || "";
+          break;
+        case "CLASS":
+          val = data.class || "";
+          break;
+        case "BILLING ADDRESS":
+          val = data.billingAddress || "";
+          break;
+        case "GST NO":
+          val = data.gstNo || "";
+          break;
+        case "GOOGLE LOCATION LINKS":
+          val = data.googleLocationLinks || "";
+          break;
+        case "SHIPPING ADDRESS":
+          val = data.shippingAddress || "";
+          break;
+        case "PIN CODE":
+          val = data.pinCode || "";
+          break;
+        case "PAN NUMBER":
+          val = data.panNumber || "";
+          break;
+        case "SALES POC CONTACT NO":
+          val = data.salesPocContactNo || "";
+          break;
+        case "CREDIT TYPE":
+          val = data.creditType || "";
+          break;
+        case "CRM POC":
+          val = data.crmPoc || "";
+          break;
+        case "SECONDARY UPPER LIMIT (IN DAYS)":
+          val = data.secondaryUpperLimitInDays ? parseFloat(data.secondaryUpperLimitInDays) : "";
+          break;
+        case "DATE OF ADDING":
+          val = existingRowValues[c] || dateStr;
+          break;
+        case "FSSAI NUMBER":
+          val = data.fssaiNumber || "";
+          break;
+        case "FREIGHT TO BE ADDED? Y/N":
+          val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
+          break;
+        case "LOCAL / OUTSTATION":
+        case "LOCAL/OUTSTATION":
+          val = "";
+          break;
+        default:
+          if (c === 35) { // 36th column (AJ) is index 35
+            val = "";
+          } else {
+            val = existingRowValues[c] || "";
+          }
+      }
+      updatedRow.push(val);
+    }
+
+    sheet.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+    
+    // Clear the LOCAL / OUTSTATION cell to let the ARRAYFORMULA run
+    try {
+      var localOutstationIndex = -1;
+      for (var i = 0; i < headers.length; i++) {
+        var h = (headers[i] || "").toString().trim().toUpperCase();
+        if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
+          localOutstationIndex = i;
+          break;
+        }
+      }
+      if (localOutstationIndex !== -1) {
+        sheet.getRange(targetRowIndex, localOutstationIndex + 1).clearContent();
+      } else if (maxCols >= 36) {
+        sheet.getRange(targetRowIndex, 36).clearContent();
+      }
+    } catch (clearErr) {
+      _logError("updateClientClearFormula", clearErr, data.partyName);
+    }
+
+    if (data.area && data.city) {
+      addNewAreaToDataSheet(data.area, data.city);
+    }
+
+    var clientType = "LOCAL";
+    try {
+      clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
+      syncClientToPricingSheet(data.partyName, clientType);
+    } catch (syncErr) {
+      _logError("updateClientSync", syncErr, data.partyName);
+    }
+
+    try {
+      _clearCacheKey("active_clients_grouped");
+      _clearCacheKey("client_list_poc");
+      _clearCacheKey("pricing_clients_LOCAL");
+      _clearCacheKey("pricing_clients_OUTSTATION");
+      _clearCacheKey("all_pricing_data_v3_LOCAL");
+      _clearCacheKey("all_pricing_data_v3_OUTSTATION");
+    } catch (cacheErr) {
+      Logger.log("Cache bust error: " + cacheErr);
+    }
+
+    return { ok: true, clientType: clientType };
+  } catch (e) {
+    _logError("updateClient", e, originalPartyName);
+    return { ok: false, message: e.toString() };
   }
 }
 

@@ -97,20 +97,27 @@ const STEPS = [
 ];
 
 export default function ClientForm({
-  onSuccess
+  onSuccess,
+  mode = 'create',
+  initialData,
+  originalPartyName
 }: {
   onSuccess?: (partyName: string, clientType: 'LOCAL' | 'OUTSTATION') => void;
+  mode?: 'create' | 'edit';
+  initialData?: any;
+  originalPartyName?: string;
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [form, setForm] = useState(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [areasList, setAreasList] = useState<string[]>(AREAS);
   const [originalAreas, setOriginalAreas] = useState<string[]>([]);
+  const [categoriesList, setCategoriesList] = useState<string[]>(CLIENT_CATEGORIES);
   const [citiesList, setCitiesList] = useState<string[]>([]);
   
-  // Load dynamic areas and cities on mount
+  // Load dynamic areas, cities, and categories on mount
   useEffect(() => {
-    async function loadAreasAndCities() {
+    async function loadMetadata() {
       try {
         const areasRes = await fetch('/api/areas');
         if (areasRes.ok) {
@@ -136,8 +143,21 @@ export default function ClientForm({
       } catch (err) {
         console.error('Error loading dynamic cities:', err);
       }
+
+      try {
+        const categoriesRes = await fetch('/api/client-categories');
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          if (Array.isArray(categoriesData)) {
+            const merged = Array.from(new Set([...CLIENT_CATEGORIES, ...categoriesData]));
+            setCategoriesList(merged);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading dynamic client categories:', err);
+      }
     }
-    loadAreasAndCities();
+    loadMetadata();
   }, []);
 
   // Submit modal and warning modals states
@@ -145,6 +165,13 @@ export default function ClientForm({
   const [submitMessage, setSubmitMessage] = useState('');
   const [showFssaiWarning, setShowFssaiWarning] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState('');
+
+  // Pre-fill form details if in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      setForm(initialData);
+    }
+  }, [mode, initialData]);
 
   // Restore draft form progress if session expired previously
   useEffect(() => {
@@ -337,7 +364,6 @@ export default function ClientForm({
       
       if (!form.customerType) errors.customerType = 'Customer type is required';
       if (!form.class) errors.class = 'Class selection is required';
-      if (!form.localOrOutstation) errors.localOrOutstation = 'Local/Outstation selection is required';
       if (!form.billingAddress.trim()) errors.billingAddress = 'Billing address is required';
       if (!form.shippingAddress.trim()) errors.shippingAddress = 'Shipping address is required';
       
@@ -405,14 +431,23 @@ export default function ClientForm({
   // Form submit core execution
   const doSubmit = async () => {
     setSubmitStatus('loading');
-    setSubmitMessage('Adding client to Google Sheets...');
+    setSubmitMessage(mode === 'edit' ? 'Updating client details in Google Sheets...' : 'Adding client to Google Sheets...');
 
     try {
-      const res = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
+      let res;
+      if (mode === 'edit' && originalPartyName) {
+        res = await fetch('/api/clients', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalPartyName, data: form })
+        });
+      } else {
+        res = await fetch('/api/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+      }
 
       if (res.status === 401) {
         try {
@@ -430,12 +465,12 @@ export default function ClientForm({
       }
 
       setSubmitStatus('success');
-      setSubmitMessage('Client registered successfully in the Google Sheet! Redirecting to pricing...');
+      setSubmitMessage(mode === 'edit' ? 'Client updated successfully!' : 'Client registered successfully in the Google Sheet! Redirecting to pricing...');
       
       // Reset form and redirect after successful submission
       setTimeout(() => {
         const clientName = form.partyName;
-        const cType = form.localOrOutstation as 'LOCAL' | 'OUTSTATION';
+        const cType = (data.clientType || form.localOrOutstation) as 'LOCAL' | 'OUTSTATION';
         setForm(EMPTY_FORM);
         setFieldErrors({});
         setCurrentStep(0);
@@ -548,7 +583,7 @@ export default function ClientForm({
               <span className='flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary text-sm'>
                 📋
               </span>
-              <h2 className='heading-md'>Basic Client Information</h2>
+              <h2 className='heading-md'>{mode === 'edit' ? 'Edit Client Details' : 'Basic Client Information'}</h2>
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -556,7 +591,7 @@ export default function ClientForm({
                 <label className='label'>Client Category *</label>
                 <SearchableSelect
                   value={form.clientCategory}
-                  options={CLIENT_CATEGORIES}
+                  options={categoriesList}
                   placeholder='Search category...'
                   emptyLabel='Select client category'
                   label='Client Category'
@@ -892,22 +927,6 @@ export default function ClientForm({
                 <FieldError field='class' />
               </div>
 
-              <div className='form-group'>
-                <label className='label'>Client Type (Local / Outstation) *</label>
-                <SearchableSelect
-                  value={form.localOrOutstation}
-                  options={['LOCAL', 'OUTSTATION']}
-                  placeholder='Select type...'
-                  emptyLabel='Select Local/Outstation'
-                  label='Local/Outstation'
-                  onChange={(val) => {
-                    setForm((p) => ({ ...p, localOrOutstation: val }));
-                    clearError('localOrOutstation');
-                  }}
-                />
-                <FieldError field='localOrOutstation' />
-              </div>
-
               {/* GSTIN field is always visible, mandatory only for PB Class */}
               <div className='form-group'>
                 <label className='label font-semibold text-primary'>GST Number {form.class === 'PB' ? '*' : ''}</label>
@@ -1161,7 +1180,7 @@ export default function ClientForm({
               type='submit'
               className='btn-primary bg-primary hover:bg-primary/90 h-12 px-10 rounded-lg font-semibold transition'
             >
-              Submit Client Details
+              {mode === 'edit' ? 'Update Client Details' : 'Submit Client Details'}
             </button>
           )}
         </div>
