@@ -1554,3 +1554,23 @@ function _getHeaderRowIndex(sheet) {
   }
   return 2; // Default fallback to Row 2
 }
+
+function testGetDetails() {
+  var result = getClientDetails("ANIKET (LOWER PAREL)");
+  Logger.log(JSON.stringify(result));
+}
+
+function dumpLogs() {
+  try {
+    var ss = _getSetupSpreadsheet();
+    var sheet = ss.getSheetByName("Logs");
+    if (!sheet) return "No Logs sheet found";
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return "No logs recorded";
+    var range = sheet.getRange(Math.max(1, lastRow - 10), 1, Math.min(10, lastRow), 5);
+    var values = range.getValues();
+    Logger.log(JSON.stringify(values));
+  } catch (e) {
+    Logger.log("Error dumping logs: " + e.toString());
+  }
+}
