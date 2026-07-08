@@ -160,6 +160,9 @@ function createClient(data) {
       case "AREA":
         val = data.area || "";
         break;
+      case "CITY":
+        val = "";
+        break;
       case "CUSTOMER TYPE (HORECA/RETAIL)":
         val = data.customerType || "";
         break;
@@ -222,20 +225,25 @@ function createClient(data) {
   sheet.appendRow(newRow);
   var appendedRowIndex = sheet.getLastRow();
   
-  // Clear the LOCAL / OUTSTATION cell to let the ARRAYFORMULA run
+  // Clear the CITY and LOCAL / OUTSTATION cells to let the ARRAYFORMULAs run
   try {
     var localOutstationIndex = -1;
+    var cityIndex = -1;
     for (var i = 0; i < headers.length; i++) {
       var h = (headers[i] || "").toString().trim().toUpperCase();
       if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
         localOutstationIndex = i;
-        break;
+      } else if (h === "CITY") {
+        cityIndex = i;
       }
     }
     if (localOutstationIndex !== -1) {
       sheet.getRange(appendedRowIndex, localOutstationIndex + 1).clearContent();
     } else if (maxCols >= 36) {
       sheet.getRange(appendedRowIndex, 36).clearContent();
+    }
+    if (cityIndex !== -1) {
+      sheet.getRange(appendedRowIndex, cityIndex + 1).clearContent();
     }
   } catch (clearErr) {
     _logError("createClientClearFormula", clearErr, data.partyName);
@@ -465,6 +473,9 @@ function getClientDetails(partyName) {
         case "AREA":
           clientData.area = val;
           break;
+        case "CITY":
+          clientData.city = val;
+          break;
         case "CUSTOMER TYPE (HORECA/RETAIL)":
           clientData.customerType = val || "HORECA";
           break;
@@ -634,6 +645,9 @@ function updateClient(originalPartyName, data) {
         case "AREA":
           val = data.area || "";
           break;
+        case "CITY":
+          val = "";
+          break;
         case "CUSTOMER TYPE (HORECA/RETAIL)":
           val = data.customerType || "";
           break;
@@ -695,20 +709,25 @@ function updateClient(originalPartyName, data) {
 
     sheet.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
     
-    // Clear the LOCAL / OUTSTATION cell to let the ARRAYFORMULA run
+    // Clear the CITY and LOCAL / OUTSTATION cells to let the ARRAYFORMULAs run
     try {
       var localOutstationIndex = -1;
+      var cityIndex = -1;
       for (var i = 0; i < headers.length; i++) {
         var h = (headers[i] || "").toString().trim().toUpperCase();
         if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
           localOutstationIndex = i;
-          break;
+        } else if (h === "CITY") {
+          cityIndex = i;
         }
       }
       if (localOutstationIndex !== -1) {
         sheet.getRange(targetRowIndex, localOutstationIndex + 1).clearContent();
       } else if (maxCols >= 36) {
         sheet.getRange(targetRowIndex, 36).clearContent();
+      }
+      if (cityIndex !== -1) {
+        sheet.getRange(targetRowIndex, cityIndex + 1).clearContent();
       }
     } catch (clearErr) {
       _logError("updateClientClearFormula", clearErr, data.partyName);
@@ -1574,3 +1593,4 @@ function dumpLogs() {
     Logger.log("Error dumping logs: " + e.toString());
   }
 }
+

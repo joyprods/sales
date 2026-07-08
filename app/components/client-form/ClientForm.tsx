@@ -357,11 +357,7 @@ export default function ClientForm({
     else if (stepIdx === 2) {
       if (!form.area) errors.area = 'Area selection is required';
       
-      const isNewArea = form.area && !originalAreas.includes(form.area);
-      if (isNewArea && !form.city) {
-        errors.city = 'City selection is required for a new area';
-      }
-      
+
       if (!form.customerType) errors.customerType = 'Customer type is required';
       if (!form.class) errors.class = 'Class selection is required';
       if (!form.billingAddress.trim()) errors.billingAddress = 'Billing address is required';
@@ -848,16 +844,12 @@ export default function ClientForm({
                 <SearchableSelect
                   value={form.area}
                   onChange={(val) => {
-                    setForm((p) => {
-                      const isNew = val && !originalAreas.includes(val);
-                      return {
-                        ...p,
-                        area: val,
-                        city: isNew ? p.city : ''
-                      };
-                    });
+                    setForm((p) => ({
+                      ...p,
+                      area: val,
+                      city: ''
+                    }));
                     clearError('area');
-                    clearError('city');
                     if (val && !areasList.includes(val)) {
                       setAreasList((prev) => Array.from(new Set([...prev, val])).sort());
                     }
@@ -871,29 +863,7 @@ export default function ClientForm({
                 <FieldError field='area' />
               </div>
 
-              {form.area && !originalAreas.includes(form.area) ? (
-                <div className='form-group animate-in fade-in slide-in-from-top-2 duration-200'>
-                  <label className='label font-semibold text-primary'>City for New Area *</label>
-                  <SearchableSelect
-                    value={form.city}
-                    onChange={(val) => {
-                      setForm((p) => ({ ...p, city: val }));
-                      clearError('city');
-                      if (val && !citiesList.includes(val)) {
-                        setCitiesList((prev) => Array.from(new Set([...prev, val])).sort());
-                      }
-                    }}
-                    options={citiesList}
-                    placeholder='Select or type new city...'
-                    emptyLabel='Select City'
-                    label='City'
-                    allowCustom={true}
-                  />
-                  <FieldError field='city' />
-                </div>
-              ) : (
-                <div className='hidden md:block' />
-              )}
+
 
               <div className='form-group'>
                 <label className='label'>Customer Type *</label>
