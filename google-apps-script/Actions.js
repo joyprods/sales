@@ -1593,4 +1593,3 @@ function dumpLogs() {
     Logger.log("Error dumping logs: " + e.toString());
   }
 }
-
