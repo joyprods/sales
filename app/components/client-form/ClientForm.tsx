@@ -289,7 +289,7 @@ export default function ClientForm({
 
   const validateFssai = (val: string) => {
     if (!val) {
-      setError('fssaiNumber', 'FSSAI License number is required');
+      clearError('fssaiNumber');
       return;
     }
     if (!/^\d{14}$/.test(val)) {
@@ -399,8 +399,7 @@ export default function ClientForm({
         errors.secondaryUpperLimitInDays = 'Credit limit in days is required for CREDIT type';
       }
 
-      if (!form.fssaiNumber) errors.fssaiNumber = 'FSSAI number is required';
-      else if (!/^\d{14}$/.test(form.fssaiNumber)) {
+      if (form.fssaiNumber && !/^\d{14}$/.test(form.fssaiNumber)) {
         errors.fssaiNumber = 'Must be exactly 14 digits';
       }
 
@@ -1086,7 +1085,7 @@ export default function ClientForm({
               )}
 
               <div className='form-group'>
-                <label className='label'>FSSAI Number *</label>
+                <label className='label'>FSSAI Number</label>
                 <input
                   name='fssaiNumber'
                   maxLength={14}

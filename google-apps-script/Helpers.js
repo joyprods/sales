@@ -18,7 +18,9 @@ function _getSetupConfig() {
   
   var config = {
     clientSpreadsheetId: "1prN7HT6Bibl1Pz3_GbnTcdjiPw9GOVZp5BxYR7mRGow", // Default fallback
-    clientSheetName: "Client List" // Default fallback
+    clientSheetName: "Client List", // Default fallback
+    productPriceSpreadsheetId: "",
+    productSheetName: "Product List"
   };
   
   for (var i = 0; i < data.length; i++) {
@@ -31,9 +33,19 @@ function _getSetupConfig() {
         config.clientSpreadsheetId = val;
       } else if (key.indexOf("client sheet") !== -1) {
         config.clientSheetName = val;
+      } else if (key.indexOf("product price sheet id") !== -1 || key.indexOf("product price sheetid") !== -1) {
+        config.productPriceSpreadsheetId = val;
+      } else if (key.indexOf("product sheet name") !== -1 || key.indexOf("product sheetname") !== -1) {
+        config.productSheetName = val;
       }
     }
   }
+  
+  // Default to clientSpreadsheetId if productPriceSpreadsheetId is not specified
+  if (!config.productPriceSpreadsheetId) {
+    config.productPriceSpreadsheetId = config.clientSpreadsheetId;
+  }
+  
   return config;
 }
 

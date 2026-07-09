@@ -111,113 +111,117 @@ function createClient(data) {
     var header = c < headers.length ? (headers[c] || "").toString().trim().toUpperCase() : "";
     var val = "";
     
-    switch (header) {
-      case "CLIENT STATUS":
-        val = "Active";
-        break;
-      case "CLIENT ID":
-        val = newClientId;
-        break;
-      case "CLIENT CATEGORY":
-        val = data.clientCategory || "";
-        break;
-      case "PARTY NAME":
-        val = data.partyName || "";
-        break;
-      case "SALES POC":
-        val = data.salesPoc || "";
-        break;
-      case "MSME NUMBER":
-        val = (data.hasMsme === "Yes") ? (data.msmeNumber || "") : "";
-        break;
-      case "CONTACT PERSON (PURCHASE)":
-        val = data.contactPersonPurchase || "";
-        break;
-      case "CONTACT NUMBER (PURCHASE)":
-        val = data.contactNumberPurchase || "";
-        break;
-      case "EMAIL ID (PURCHASE)":
-        val = data.emailIdPurchase || "";
-        break;
-      case "CONTACT PERSON (ACCOUNTS)":
-        val = data.contactPersonAccounts || "";
-        break;
-      case "MOBILE NUMBER (ACCOUNTS)":
-        val = data.mobileNumberAccounts || "";
-        break;
-      case "EMAIL ID (ACCOUNTS)":
-        val = data.emailIdAccounts || "";
-        break;
-      case "CONTACT PERSON 3":
-        val = data.contactPerson3 || "";
-        break;
-      case "CONTACT NUMBER":
-        val = data.contactNumber3 || "";
-        break;
-      case "EMAIL ID 3":
-        val = data.emailId3 || "";
-        break;
-      case "AREA":
-        val = data.area || "";
-        break;
-      case "CITY":
-        val = "";
-        break;
-      case "CUSTOMER TYPE (HORECA/RETAIL)":
-        val = data.customerType || "";
-        break;
-      case "CLASS":
-        val = data.class || "";
-        break;
-      case "BILLING ADDRESS":
-        val = data.billingAddress || "";
-        break;
-      case "GST NO":
-        val = data.gstNo || "";
-        break;
-      case "GOOGLE LOCATION LINKS":
-        val = data.googleLocationLinks || "";
-        break;
-      case "SHIPPING ADDRESS":
-        val = data.shippingAddress || "";
-        break;
-      case "PIN CODE":
-        val = data.pinCode || "";
-        break;
-      case "PAN NUMBER":
-        val = data.panNumber || "";
-        break;
-      case "SALES POC CONTACT NO":
-        val = data.salesPocContactNo || "";
-        break;
-      case "CREDIT TYPE":
-        val = data.creditType || "";
-        break;
-      case "CRM POC":
-        val = data.crmPoc || "";
-        break;
-      case "SECONDARY UPPER LIMIT (IN DAYS)":
-        val = data.secondaryUpperLimitInDays ? parseFloat(data.secondaryUpperLimitInDays) : "";
-        break;
-      case "DATE OF ADDING":
-        val = dateStr;
-        break;
-      case "FSSAI NUMBER":
-        val = data.fssaiNumber || "";
-        break;
-      case "FREIGHT TO BE ADDED? Y/N":
-        val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
-        break;
-      case "LOCAL / OUTSTATION":
-      case "LOCAL/OUTSTATION":
-        val = "";
-        break;
-      default:
-        if (c === 35) { // 36th column (AJ) is index 35
+    if (_isFormulaHeader(header)) {
+      val = "";
+    } else {
+      switch (header) {
+        case "CLIENT STATUS":
+          val = "Active";
+          break;
+        case "CLIENT ID":
+          val = newClientId;
+          break;
+        case "CLIENT CATEGORY":
+          val = data.clientCategory || "";
+          break;
+        case "PARTY NAME":
+          val = data.partyName || "";
+          break;
+        case "SALES POC":
+          val = data.salesPoc || "";
+          break;
+        case "MSME NUMBER":
+          val = (data.hasMsme === "Yes") ? (data.msmeNumber || "") : "";
+          break;
+        case "CONTACT PERSON (PURCHASE)":
+          val = data.contactPersonPurchase || "";
+          break;
+        case "CONTACT NUMBER (PURCHASE)":
+          val = data.contactNumberPurchase || "";
+          break;
+        case "EMAIL ID (PURCHASE)":
+          val = data.emailIdPurchase || "";
+          break;
+        case "CONTACT PERSON (ACCOUNTS)":
+          val = data.contactPersonAccounts || "";
+          break;
+        case "MOBILE NUMBER (ACCOUNTS)":
+          val = data.mobileNumberAccounts || "";
+          break;
+        case "EMAIL ID (ACCOUNTS)":
+          val = data.emailIdAccounts || "";
+          break;
+        case "CONTACT PERSON 3":
+          val = data.contactPerson3 || "";
+          break;
+        case "CONTACT NUMBER":
+          val = data.contactNumber3 || "";
+          break;
+        case "EMAIL ID 3":
+          val = data.emailId3 || "";
+          break;
+        case "AREA":
+          val = data.area || "";
+          break;
+        case "CITY":
           val = "";
-        } else {
+          break;
+        case "CUSTOMER TYPE (HORECA/RETAIL)":
+          val = data.customerType || "";
+          break;
+        case "CLASS":
+          val = data.class || "";
+          break;
+        case "BILLING ADDRESS":
+          val = data.billingAddress || "";
+          break;
+        case "GST NO":
+          val = data.gstNo || "";
+          break;
+        case "GOOGLE LOCATION LINKS":
+          val = data.googleLocationLinks || "";
+          break;
+        case "SHIPPING ADDRESS":
+          val = data.shippingAddress || "";
+          break;
+        case "PIN CODE":
+          val = data.pinCode || "";
+          break;
+        case "PAN NUMBER":
+          val = data.panNumber || "";
+          break;
+        case "SALES POC CONTACT NO":
+          val = data.salesPocContactNo || "";
+          break;
+        case "CREDIT TYPE":
+          val = data.creditType || "";
+          break;
+        case "CRM POC":
+          val = data.crmPoc || "";
+          break;
+        case "SECONDARY UPPER LIMIT (IN DAYS)":
+          val = data.secondaryUpperLimitInDays ? parseFloat(data.secondaryUpperLimitInDays) : "";
+          break;
+        case "DATE OF ADDING":
+          val = dateStr;
+          break;
+        case "FSSAI NUMBER":
+          val = data.fssaiNumber || "";
+          break;
+        case "FREIGHT TO BE ADDED? Y/N":
+          val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
+          break;
+        case "LOCAL / OUTSTATION":
+        case "LOCAL/OUTSTATION":
           val = "";
-        }
+          break;
+        default:
+          if (c === 35) { // 36th column (AJ) is index 35
+            val = "";
+          } else {
+            val = "";
+          }
+      }
     }
     newRow.push(val);
   }
@@ -225,26 +229,9 @@ function createClient(data) {
   sheet.appendRow(newRow);
   var appendedRowIndex = sheet.getLastRow();
   
-  // Clear the CITY and LOCAL / OUTSTATION cells to let the ARRAYFORMULAs run
+  // Clear formula cells to let ARRAYFORMULAs run
   try {
-    var localOutstationIndex = -1;
-    var cityIndex = -1;
-    for (var i = 0; i < headers.length; i++) {
-      var h = (headers[i] || "").toString().trim().toUpperCase();
-      if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
-        localOutstationIndex = i;
-      } else if (h === "CITY") {
-        cityIndex = i;
-      }
-    }
-    if (localOutstationIndex !== -1) {
-      sheet.getRange(appendedRowIndex, localOutstationIndex + 1).clearContent();
-    } else if (maxCols >= 36) {
-      sheet.getRange(appendedRowIndex, 36).clearContent();
-    }
-    if (cityIndex !== -1) {
-      sheet.getRange(appendedRowIndex, cityIndex + 1).clearContent();
-    }
+    _clearFormulaCells(sheet, appendedRowIndex, headers);
   } catch (clearErr) {
     _logError("createClientClearFormula", clearErr, data.partyName);
   }
@@ -257,7 +244,12 @@ function createClient(data) {
   // Dynamically sync client name to the correct pricing matrix sheet on creation
   var clientType = "LOCAL";
   try {
-    clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
+    var rawCity = (data.city || "").toString().trim().toUpperCase();
+    if (rawCity) {
+      clientType = (rawCity === "MUMBAI") ? "LOCAL" : "OUTSTATION";
+    } else {
+      clientType = _getClientTypeFromArea(data.area);
+    }
     syncClientToPricingSheet(data.partyName, clientType);
   } catch (syncErr) {
     _logError("createClientSync", syncErr, data.partyName);
@@ -271,6 +263,7 @@ function createClient(data) {
     _clearCacheKey("pricing_clients_OUTSTATION");
     _clearCacheKey("all_pricing_data_v3_LOCAL");
     _clearCacheKey("all_pricing_data_v3_OUTSTATION");
+    _clearCacheKey("client_details_" + data.partyName.trim().toUpperCase());
   } catch (cacheErr) {
     Logger.log("Cache bust error: " + cacheErr);
   }
@@ -362,6 +355,16 @@ function getClientCategoriesList() {
 
 // Fetch details of a specific client from the sheet
 function getClientDetails(partyName) {
+  var cacheKey = "client_details_" + partyName.trim().toUpperCase();
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    Logger.log("Cache get error for client details: " + err);
+  }
+
   try {
     var config = _getSetupConfig();
     var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
@@ -526,23 +529,13 @@ function getClientDetails(partyName) {
     }
 
     // Determine city:
-    // If city is not directly in the client list, try to lookup city based on area using the Data Sheet
+    // If city is not directly in the client list, try to lookup city based on area using the Data Sheet (cached)
     if (!clientData.city && clientData.area) {
       try {
-        var dataSheet = ss.getSheetByName("Data Sheet");
-        if (dataSheet) {
-          var dsLastRow = dataSheet.getLastRow();
-          if (dsLastRow > 1) {
-            var dsData = dataSheet.getRange(2, 1, dsLastRow - 1, 5).getValues();
-            var searchArea = clientData.area.toUpperCase().trim();
-            for (var k = 0; k < dsData.length; k++) {
-              var area = (dsData[k][0] || "").toString().trim().toUpperCase();
-              if (area === searchArea) {
-                clientData.city = (dsData[k][4] || "").toString().trim(); // Column E is City (index 4)
-                break;
-              }
-            }
-          }
+        var map = _getAreaCityMap();
+        var searchArea = clientData.area.toUpperCase().trim();
+        if (map[searchArea]) {
+          clientData.city = map[searchArea];
         }
       } catch (cityErr) {
         Logger.log("City lookup error for " + clientData.area + ": " + cityErr);
@@ -553,7 +546,13 @@ function getClientDetails(partyName) {
       clientData.shippingAddressSame = true;
     }
 
-    return { ok: true, data: clientData };
+    var resObj = { ok: true, data: clientData };
+    try {
+      _setCachedData(cacheKey, resObj, 1800); // Cache for 30 minutes
+    } catch (cacheErr) {
+      Logger.log("Cache set error for client details: " + cacheErr);
+    }
+    return resObj;
   } catch (e) {
     _logError("getClientDetails", e, partyName);
     return { ok: false, message: e.toString() };
@@ -596,139 +595,127 @@ function updateClient(originalPartyName, data) {
       var header = c < headers.length ? (headers[c] || "").toString().trim().toUpperCase() : "";
       var val = "";
       
-      switch (header) {
-        case "CLIENT STATUS":
-          val = existingRowValues[c] || "Active";
-          break;
-        case "CLIENT ID":
-          val = existingRowValues[c] || "";
-          break;
-        case "CLIENT CATEGORY":
-          val = data.clientCategory || "";
-          break;
-        case "PARTY NAME":
-          val = data.partyName || "";
-          break;
-        case "SALES POC":
-          val = data.salesPoc || "";
-          break;
-        case "MSME NUMBER":
-          val = (data.hasMsme === "Yes") ? (data.msmeNumber || "") : "";
-          break;
-        case "CONTACT PERSON (PURCHASE)":
-          val = data.contactPersonPurchase || "";
-          break;
-        case "CONTACT NUMBER (PURCHASE)":
-          val = data.contactNumberPurchase || "";
-          break;
-        case "EMAIL ID (PURCHASE)":
-          val = data.emailIdPurchase || "";
-          break;
-        case "CONTACT PERSON (ACCOUNTS)":
-          val = data.contactPersonAccounts || "";
-          break;
-        case "MOBILE NUMBER (ACCOUNTS)":
-          val = data.mobileNumberAccounts || "";
-          break;
-        case "EMAIL ID (ACCOUNTS)":
-          val = data.emailIdAccounts || "";
-          break;
-        case "CONTACT PERSON 3":
-          val = data.contactPerson3 || "";
-          break;
-        case "CONTACT NUMBER":
-          val = data.contactNumber3 || "";
-          break;
-        case "EMAIL ID 3":
-          val = data.emailId3 || "";
-          break;
-        case "AREA":
-          val = data.area || "";
-          break;
-        case "CITY":
-          val = "";
-          break;
-        case "CUSTOMER TYPE (HORECA/RETAIL)":
-          val = data.customerType || "";
-          break;
-        case "CLASS":
-          val = data.class || "";
-          break;
-        case "BILLING ADDRESS":
-          val = data.billingAddress || "";
-          break;
-        case "GST NO":
-          val = data.gstNo || "";
-          break;
-        case "GOOGLE LOCATION LINKS":
-          val = data.googleLocationLinks || "";
-          break;
-        case "SHIPPING ADDRESS":
-          val = data.shippingAddress || "";
-          break;
-        case "PIN CODE":
-          val = data.pinCode || "";
-          break;
-        case "PAN NUMBER":
-          val = data.panNumber || "";
-          break;
-        case "SALES POC CONTACT NO":
-          val = data.salesPocContactNo || "";
-          break;
-        case "CREDIT TYPE":
-          val = data.creditType || "";
-          break;
-        case "CRM POC":
-          val = data.crmPoc || "";
-          break;
-        case "SECONDARY UPPER LIMIT (IN DAYS)":
-          val = data.secondaryUpperLimitInDays ? parseFloat(data.secondaryUpperLimitInDays) : "";
-          break;
-        case "DATE OF ADDING":
-          val = existingRowValues[c] || dateStr;
-          break;
-        case "FSSAI NUMBER":
-          val = data.fssaiNumber || "";
-          break;
-        case "FREIGHT TO BE ADDED? Y/N":
-          val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
-          break;
-        case "LOCAL / OUTSTATION":
-        case "LOCAL/OUTSTATION":
-          val = "";
-          break;
-        default:
-          if (c === 35) { // 36th column (AJ) is index 35
-            val = "";
-          } else {
+      if (_isFormulaHeader(header)) {
+        val = "";
+      } else {
+        switch (header) {
+          case "CLIENT STATUS":
+            val = existingRowValues[c] || "Active";
+            break;
+          case "CLIENT ID":
             val = existingRowValues[c] || "";
-          }
+            break;
+          case "CLIENT CATEGORY":
+            val = data.clientCategory || "";
+            break;
+          case "PARTY NAME":
+            val = data.partyName || "";
+            break;
+          case "SALES POC":
+            val = data.salesPoc || "";
+            break;
+          case "MSME NUMBER":
+            val = (data.hasMsme === "Yes") ? (data.msmeNumber || "") : "";
+            break;
+          case "CONTACT PERSON (PURCHASE)":
+            val = data.contactPersonPurchase || "";
+            break;
+          case "CONTACT NUMBER (PURCHASE)":
+            val = data.contactNumberPurchase || "";
+            break;
+          case "EMAIL ID (PURCHASE)":
+            val = data.emailIdPurchase || "";
+            break;
+          case "CONTACT PERSON (ACCOUNTS)":
+            val = data.contactPersonAccounts || "";
+            break;
+          case "MOBILE NUMBER (ACCOUNTS)":
+            val = data.mobileNumberAccounts || "";
+            break;
+          case "EMAIL ID (ACCOUNTS)":
+            val = data.emailIdAccounts || "";
+            break;
+          case "CONTACT PERSON 3":
+            val = data.contactPerson3 || "";
+            break;
+          case "CONTACT NUMBER":
+            val = data.contactNumber3 || "";
+            break;
+          case "EMAIL ID 3":
+            val = data.emailId3 || "";
+            break;
+          case "AREA":
+            val = data.area || "";
+            break;
+          case "CITY":
+            val = "";
+            break;
+          case "CUSTOMER TYPE (HORECA/RETAIL)":
+            val = data.customerType || "";
+            break;
+          case "CLASS":
+            val = data.class || "";
+            break;
+          case "BILLING ADDRESS":
+            val = data.billingAddress || "";
+            break;
+          case "GST NO":
+            val = data.gstNo || "";
+            break;
+          case "GOOGLE LOCATION LINKS":
+            val = data.googleLocationLinks || "";
+            break;
+          case "SHIPPING ADDRESS":
+            val = data.shippingAddress || "";
+            break;
+          case "PIN CODE":
+            val = data.pinCode || "";
+            break;
+          case "PAN NUMBER":
+            val = data.panNumber || "";
+            break;
+          case "SALES POC CONTACT NO":
+            val = data.salesPocContactNo || "";
+            break;
+          case "CREDIT TYPE":
+            val = data.creditType || "";
+            break;
+          case "CRM POC":
+            val = data.crmPoc || "";
+            break;
+          case "SECONDARY UPPER LIMIT (IN DAYS)":
+            val = data.secondaryUpperLimitInDays ? parseFloat(data.secondaryUpperLimitInDays) : "";
+            break;
+          case "DATE OF ADDING":
+            var existingDate = existingRowValues[c];
+            val = (existingDate !== "" && existingDate !== null && existingDate !== undefined) ? existingDate : dateStr;
+            break;
+          case "FSSAI NUMBER":
+            val = data.fssaiNumber || "";
+            break;
+          case "FREIGHT TO BE ADDED? Y/N":
+            val = (data.freightToBeAdded === "Yes" || data.freightToBeAdded === "Y") ? "Y" : "N";
+            break;
+          case "LOCAL / OUTSTATION":
+          case "LOCAL/OUTSTATION":
+            val = "";
+            break;
+          default:
+            if (c === 35) { // 36th column (AJ) is index 35
+              val = "";
+            } else {
+              val = existingRowValues[c] || "";
+            }
+        }
       }
       updatedRow.push(val);
     }
 
     sheet.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
     
-    // Clear the CITY and LOCAL / OUTSTATION cells to let the ARRAYFORMULAs run
+    // Clear formula cells to let ARRAYFORMULAs run
     try {
-      var localOutstationIndex = -1;
-      var cityIndex = -1;
-      for (var i = 0; i < headers.length; i++) {
-        var h = (headers[i] || "").toString().trim().toUpperCase();
-        if (h === "LOCAL / OUTSTATION" || h === "LOCAL/OUTSTATION") {
-          localOutstationIndex = i;
-        } else if (h === "CITY") {
-          cityIndex = i;
-        }
-      }
-      if (localOutstationIndex !== -1) {
-        sheet.getRange(targetRowIndex, localOutstationIndex + 1).clearContent();
-      } else if (maxCols >= 36) {
-        sheet.getRange(targetRowIndex, 36).clearContent();
-      }
-      if (cityIndex !== -1) {
-        sheet.getRange(targetRowIndex, cityIndex + 1).clearContent();
-      }
+      _clearFormulaCells(sheet, targetRowIndex, headers);
     } catch (clearErr) {
       _logError("updateClientClearFormula", clearErr, data.partyName);
     }
@@ -739,7 +726,12 @@ function updateClient(originalPartyName, data) {
 
     var clientType = "LOCAL";
     try {
-      clientType = (data.localOrOutstation || _getClientTypeFromArea(data.area)).toUpperCase().trim();
+      var rawCity = (data.city || "").toString().trim().toUpperCase();
+      if (rawCity) {
+        clientType = (rawCity === "MUMBAI") ? "LOCAL" : "OUTSTATION";
+      } else {
+        clientType = _getClientTypeFromArea(data.area);
+      }
       syncClientToPricingSheet(data.partyName, clientType);
     } catch (syncErr) {
       _logError("updateClientSync", syncErr, data.partyName);
@@ -752,6 +744,8 @@ function updateClient(originalPartyName, data) {
       _clearCacheKey("pricing_clients_OUTSTATION");
       _clearCacheKey("all_pricing_data_v3_LOCAL");
       _clearCacheKey("all_pricing_data_v3_OUTSTATION");
+      _clearCacheKey("client_details_" + originalPartyName.trim().toUpperCase());
+      _clearCacheKey("client_details_" + data.partyName.trim().toUpperCase());
     } catch (cacheErr) {
       Logger.log("Cache bust error: " + cacheErr);
     }
@@ -763,26 +757,14 @@ function updateClient(originalPartyName, data) {
   }
 }
 
-// Automatically deduce client category (LOCAL/OUTSTATION) from their Area using Data Sheet
+// Automatically deduce client category (LOCAL/OUTSTATION) from their Area using Data Sheet (cached)
 function _getClientTypeFromArea(areaName) {
   try {
-    var config = _getSetupConfig();
-    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
-    var dataSheet = ss.getSheetByName("Data Sheet");
-    if (!dataSheet) return "LOCAL";
-    
-    var lastRow = dataSheet.getLastRow();
-    if (lastRow <= 1) return "LOCAL";
-    
-    var data = dataSheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var map = _getAreaCityMap();
     var searchArea = (areaName || "").toString().trim().toUpperCase();
-    
-    for (var i = 0; i < data.length; i++) {
-      var area = (data[i][0] || "").toString().trim().toUpperCase();
-      if (area === searchArea) {
-        var city = (data[i][4] || "").toString().trim().toUpperCase();
-        return (city === "MUMBAI") ? "LOCAL" : "OUTSTATION";
-      }
+    var city = map[searchArea];
+    if (city) {
+      return (city.toUpperCase().trim() === "MUMBAI") ? "LOCAL" : "OUTSTATION";
     }
     return "LOCAL";
   } catch (e) {
@@ -795,7 +777,7 @@ function _getClientTypeFromArea(areaName) {
 function syncClientToPricingSheet(partyName, localOrOutstation) {
   try {
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     var clientType = (localOrOutstation || "").toString().trim().toUpperCase();
     
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
@@ -846,7 +828,7 @@ function getActiveClientsGrouped() {
 
   try {
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     
     var localClients = [];
     var localSheet = clientSs.getSheetByName("Local Product Prices");
@@ -890,9 +872,10 @@ function getActiveClientsGrouped() {
 
 // Get active products list, resize matrix columns, verify client row, and fetch prices
 function getProductPricingData(clientType, clientName) {
+  clientType = (clientType || "").toString().trim().toUpperCase();
   try {
     // 1. Get active products (cached for 15 minutes)
-    var prodCacheKey = "active_products_" + clientType;
+    var prodCacheKey = "active_products_v4_" + clientType;
     var activeProducts = _getCachedData(prodCacheKey);
     if (!activeProducts) {
       activeProducts = [];
@@ -915,45 +898,24 @@ function getProductPricingData(clientType, clientName) {
     }
     
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
-    var pricingSheet = null;
+    var pricingSheet = clientSs.getSheetByName(pricingSheetName);
+    if (!pricingSheet) {
+      pricingSheet = clientSs.insertSheet(pricingSheetName);
+    }
     
-    // 2. Get columns/headers (cached for 15 minutes)
+    // Sync product columns dynamically
+    _syncProductColumns(pricingSheet, clientType);
+    
+    // Read the headers (cached or direct)
     var headersCacheKey = "pricing_headers_" + clientType;
     var headers = _getCachedData(headersCacheKey);
     if (!headers) {
-      pricingSheet = clientSs.getSheetByName(pricingSheetName);
-      if (!pricingSheet) {
-        pricingSheet = clientSs.insertSheet(pricingSheetName);
-      }
       var lastCol = pricingSheet.getLastColumn();
-      if (lastCol === 0) {
-        headers = ["PARTY NAME"];
-      } else {
-        headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-          return (h || "").toString().trim();
-        });
-      }
-      _setCachedData(headersCacheKey, headers, 900);
-    }
-    
-    // Add missing product columns at the end in batch!
-    var newProductsToAppend = [];
-    for (var i = 0; i < activeProducts.length; i++) {
-      var prod = activeProducts[i];
-      if (headers.indexOf(prod) === -1) {
-        newProductsToAppend.push(prod);
-        headers.push(prod);
-      }
-    }
-    
-    if (newProductsToAppend.length > 0) {
-      if (!pricingSheet) {
-        pricingSheet = clientSs.getSheetByName(pricingSheetName);
-      }
-      var currentLastCol = pricingSheet.getLastColumn();
-      pricingSheet.getRange(1, currentLastCol + 1, 1, newProductsToAppend.length).setValues([newProductsToAppend]);
+      headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return (h || "").toString().trim();
+      });
       _setCachedData(headersCacheKey, headers, 900);
     }
     
@@ -1026,9 +988,10 @@ function getProductPricingData(clientType, clientName) {
 
 // Save updated prices to the spreadsheet matrix in a single batch write call!
 function saveProductPrices(clientType, clientName, prices) {
+  clientType = (clientType || "").toString().trim().toUpperCase();
   try {
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
     var pricingSheet = clientSs.getSheetByName(pricingSheetName);
     if (!pricingSheet) {
@@ -1062,16 +1025,25 @@ function saveProductPrices(clientType, clientName, prices) {
     }
     
     var clientRowIdx = pricingClients.indexOf(clientName);
+    var targetRowIdx = -1;
+    var existingRowValues = [];
+    
     if (clientRowIdx === -1) {
       pricingSheet.appendRow([clientName]);
       pricingClients.push(clientName);
       _setCachedData(clientsCacheKey, pricingClients, 900);
-      clientRowIdx = pricingClients.length + 1;
+      targetRowIdx = pricingClients.length + 1;
     } else {
-      clientRowIdx = clientRowIdx + 2;
+      targetRowIdx = clientRowIdx + 2;
+      // Read existing row values to preserve unsubmitted prices
+      try {
+        existingRowValues = pricingSheet.getRange(targetRowIdx, 1, 1, headers.length).getValues()[0];
+      } catch (readErr) {
+        Logger.log("Failed to read existing prices row: " + readErr);
+      }
     }
     
-    // Construct the row values array directly from request payload (skips slow read)
+    // Construct the row values array directly from request payload (merging with existing)
     var rowValues = [];
     rowValues.push(clientName);
     
@@ -1090,7 +1062,15 @@ function saveProductPrices(clientType, clientName, prices) {
     for (var c = 1; c < headers.length; c++) {
       var prodName = headers[c];
       var priceVal = prices[prodName];
-      var cellVal = (priceVal === "" || priceVal === undefined || priceVal === null) ? "" : parseFloat(priceVal);
+      
+      var cellVal;
+      if (priceVal !== undefined) {
+        cellVal = (priceVal === "" || priceVal === null) ? "" : parseFloat(priceVal);
+      } else {
+        // Preserve existing price if not submitted in this request
+        var existingVal = existingRowValues[c];
+        cellVal = (existingVal !== undefined && existingVal !== null && existingVal !== "") ? existingVal : "";
+      }
       rowValues.push(cellVal);
     }
     
@@ -1102,10 +1082,10 @@ function saveProductPrices(clientType, clientName, prices) {
     }
     
     // Write the entire updated row back in one batch call!
-    pricingSheet.getRange(clientRowIdx, 1, 1, rowValues.length).setValues([rowValues]);
+    pricingSheet.getRange(targetRowIdx, 1, 1, rowValues.length).setValues([rowValues]);
     
     // Clear all pricing cache for this category to reload updated prices
-    _clearCacheKey("all_pricing_data_" + clientType);
+    _clearCacheKey("all_pricing_data_v3_" + clientType);
     
     return { ok: true };
   } catch (e) {
@@ -1158,7 +1138,7 @@ function populateAllClientsInPricingSheets() {
   try {
     var clients = _getSourceActiveClientsGrouped();
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     
     // Sync LOCAL clients
     var localSheet = clientSs.getSheetByName("Local Product Prices");
@@ -1166,6 +1146,7 @@ function populateAllClientsInPricingSheets() {
       localSheet = clientSs.insertSheet("Local Product Prices");
       localSheet.appendRow(["PARTY NAME"]);
     }
+    _syncProductColumns(localSheet, "LOCAL");
     var localLastRow = localSheet.getLastRow();
     var localExisting = [];
     if (localLastRow > 1) {
@@ -1191,6 +1172,7 @@ function populateAllClientsInPricingSheets() {
       outstationSheet = clientSs.insertSheet("Outstation Product Prices");
       outstationSheet.appendRow(["PARTY NAME"]);
     }
+    _syncProductColumns(outstationSheet, "OUTSTATION");
     var outLastRow = outstationSheet.getLastRow();
     var outExisting = [];
     if (outLastRow > 1) {
@@ -1211,6 +1193,10 @@ function populateAllClientsInPricingSheets() {
     }
     
     _clearCacheKey("active_clients_grouped");
+    _clearCacheKey("all_pricing_data_v3_LOCAL");
+    _clearCacheKey("all_pricing_data_v3_OUTSTATION");
+    _clearCacheKey("active_products_v4_LOCAL");
+    _clearCacheKey("active_products_v4_OUTSTATION");
     try {
       SpreadsheetApp.getUi().alert("Successfully synchronized all active clients to the pricing sheets.\nLocal: " + clients.LOCAL.length + " clients\nOutstation: " + clients.OUTSTATION.length + " clients.");
     } catch (uiErr) {
@@ -1226,47 +1212,59 @@ function populateAllClientsInPricingSheets() {
   }
 }
 
-// Remove empty rows and columns from pricing and data sheets in the Client Spreadsheet
+// Remove empty rows and columns from pricing and data sheets in both Client and Pricing Spreadsheets
 function optimizeAllSheets() {
+  var log = "Optimization Log:\n";
+  var totalCellsSaved = 0;
+  
   try {
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
-    var sheets = clientSs.getSheets();
+    var ssIds = [config.clientSpreadsheetId];
+    if (config.productPriceSpreadsheetId && config.productPriceSpreadsheetId !== config.clientSpreadsheetId) {
+      ssIds.push(config.productPriceSpreadsheetId);
+    }
     
-    var log = "Optimization Log:\n";
-    var totalCellsSaved = 0;
-    
-    for (var i = 0; i < sheets.length; i++) {
-      var sheet = sheets[i];
-      var name = sheet.getName();
-      
-      // Get dimensions
-      var maxRows = sheet.getMaxRows();
-      var lastRow = sheet.getLastRow();
-      var maxCols = sheet.getMaxColumns();
-      var lastCol = sheet.getLastColumn();
-      
-      var initialCells = maxRows * maxCols;
-      
-      // Delete unused rows (keep 20 padding rows, minimum 100)
-      var targetRows = Math.max(100, lastRow + 20);
-      if (maxRows > targetRows) {
-        sheet.deleteRows(targetRows + 1, maxRows - targetRows);
+    for (var sIdx = 0; sIdx < ssIds.length; sIdx++) {
+      try {
+        var clientSs = SpreadsheetApp.openById(ssIds[sIdx]);
+        log += "\nSpreadsheet: " + clientSs.getName() + " (" + ssIds[sIdx] + ")\n";
+        var sheets = clientSs.getSheets();
+        
+        for (var i = 0; i < sheets.length; i++) {
+          var sheet = sheets[i];
+          var name = sheet.getName();
+          
+          // Get dimensions
+          var maxRows = sheet.getMaxRows();
+          var lastRow = sheet.getLastRow();
+          var maxCols = sheet.getMaxColumns();
+          var lastCol = sheet.getLastColumn();
+          
+          var initialCells = maxRows * maxCols;
+          
+          // Delete unused rows (keep 20 padding rows, minimum 100)
+          var targetRows = Math.max(100, lastRow + 20);
+          if (maxRows > targetRows) {
+            sheet.deleteRows(targetRows + 1, maxRows - targetRows);
+          }
+          
+          // Delete unused columns (keep 5 padding columns, minimum 26)
+          var targetCols = Math.max(26, lastCol + 5);
+          if (maxCols > targetCols) {
+            sheet.deleteColumns(targetCols + 1, maxCols - targetCols);
+          }
+          
+          var newMaxRows = sheet.getMaxRows();
+          var newMaxCols = sheet.getMaxColumns();
+          var finalCells = newMaxRows * newMaxCols;
+          var cellsSaved = initialCells - finalCells;
+          totalCellsSaved += cellsSaved;
+          
+          log += "- " + name + ": Shrunk from " + maxRows + "x" + maxCols + " to " + newMaxRows + "x" + newMaxCols + ". Saved: " + cellsSaved + "\n";
+        }
+      } catch (ssErr) {
+        log += "Error optimizing spreadsheet " + ssIds[sIdx] + ": " + ssErr.toString() + "\n";
       }
-      
-      // Delete unused columns (keep 5 padding columns, minimum 26)
-      var targetCols = Math.max(26, lastCol + 5);
-      if (maxCols > targetCols) {
-        sheet.deleteColumns(targetCols + 1, maxCols - targetCols);
-      }
-      
-      var newMaxRows = sheet.getMaxRows();
-      var newMaxCols = sheet.getMaxColumns();
-      var finalCells = newMaxRows * newMaxCols;
-      var cellsSaved = initialCells - finalCells;
-      totalCellsSaved += cellsSaved;
-      
-      log += "- " + name + ": Shrunk from " + maxRows + "x" + maxCols + " (" + initialCells + " cells) to " + newMaxRows + "x" + newMaxCols + " (" + finalCells + " cells). Saved: " + cellsSaved + "\n";
     }
     
     log += "\nTotal Cells Saved: " + totalCellsSaved;
@@ -1347,6 +1345,7 @@ function _getSourceActiveClientsGrouped() {
 
 // Fetch all product price matrix data for a specific category (Local/Outstation) at once
 function getAllPricingData(clientType) {
+  clientType = (clientType || "").toString().trim().toUpperCase();
   var cacheKey = "all_pricing_data_v3_" + clientType;
   try {
     var cached = _getCachedData(cacheKey);
@@ -1359,12 +1358,15 @@ function getAllPricingData(clientType) {
 
   try {
     var config = _getSetupConfig();
-    var clientSs = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
     var pricingSheetName = (clientType === "OUTSTATION") ? "Outstation Product Prices" : "Local Product Prices";
     var pricingSheet = clientSs.getSheetByName(pricingSheetName);
     if (!pricingSheet) {
-      return { ok: true, products: [], clients: [], priceMap: {}, categories: {}, minPrices: {} };
+      pricingSheet = clientSs.insertSheet(pricingSheetName);
     }
+    
+    // Sync product columns before loading grid
+    _syncProductColumns(pricingSheet, clientType);
     
     var lastRow = pricingSheet.getLastRow();
     var lastCol = pricingSheet.getLastColumn();
@@ -1448,7 +1450,7 @@ function getAllPricingData(clientType) {
       minPrices: minPricesMap
     };
     
-    _setCachedData(cacheKey, result, 900);
+    _setCachedData(cacheKey, result, 300); // Cache for 5 minutes (fast reload of manual sheet edits)
     return result;
   } catch (e) {
     _logError("getAllPricingData", e, clientType);
@@ -1533,11 +1535,12 @@ function addNewAreaToDataSheet(areaName, cityName) {
     ];
     sheet.appendRow(newRow);
     
-    // Bust cached cities list
+    // Bust cached cities list and area-city map
     try {
       _clearCacheKey("cities_list");
+      _clearCacheKey("area_city_map");
     } catch (cErr) {
-      Logger.log("Cache clear error for cities_list: " + cErr);
+      Logger.log("Cache clear error for cities_list/area_city_map: " + cErr);
     }
     
     return true;
@@ -1574,6 +1577,44 @@ function _getHeaderRowIndex(sheet) {
   return 2; // Default fallback to Row 2
 }
 
+// Check if a column header corresponds to a spreadsheet formula
+function _isFormulaHeader(headerName) {
+  var formulaHeaders = [
+    "NO OF DAYS SINCE LAST ORDER",
+    "LAST ORDER DATE",
+    "SALES BOY",
+    "CITY",
+    "DELIVERY ROUTE",
+    "SALES OFFICER",
+    "DISTRIBUTOR CODE",
+    "LOCAL / OUTSTATION",
+    "LOCAL/OUTSTATION",
+    "SALES POC CONTACT NO",
+    "PRIMARY UPPER LIMIT",
+    "SECONDARY UPPER LIMIT",
+    "CLASS",
+    "GOOGLE LOCATION LINKS",
+    "SHIPPING ADDRESS",
+    "CLIENT ID",
+    "SECONDARY UPPER LIMIT (IN DAYS)"
+  ];
+  return (formulaHeaders.indexOf((headerName || "").toString().trim().toUpperCase()) !== -1);
+}
+
+// Automatically clear columns that contain sheet formulas so they don't break
+function _clearFormulaCells(sheet, rowIndex, headers) {
+  for (var i = 0; i < headers.length; i++) {
+    var h = (headers[i] || "").toString().trim().toUpperCase();
+    if (_isFormulaHeader(h)) {
+      try {
+        sheet.getRange(rowIndex, i + 1).clearContent();
+      } catch (err) {
+        Logger.log("Failed to clear formula column " + h + " at row " + rowIndex + ": " + err);
+      }
+    }
+  }
+}
+
 function testGetDetails() {
   var result = getClientDetails("ANIKET (LOWER PAREL)");
   Logger.log(JSON.stringify(result));
@@ -1593,3 +1634,107 @@ function dumpLogs() {
     Logger.log("Error dumping logs: " + e.toString());
   }
 }
+
+// Fetch the Area to City map from Data Sheet and cache it to speed up type lookups
+function _getAreaCityMap() {
+  var cacheKey = "area_city_map";
+  try {
+    var cached = _getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    Logger.log("Cache get error for area_city_map: " + err);
+  }
+
+  try {
+    var config = _getSetupConfig();
+    var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+    var dataSheet = ss.getSheetByName("Data Sheet");
+    if (!dataSheet) return {};
+    
+    var lastRow = dataSheet.getLastRow();
+    if (lastRow <= 1) return {};
+    
+    var data = dataSheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var map = {};
+    for (var i = 0; i < data.length; i++) {
+      var area = (data[i][0] || "").toString().trim().toUpperCase();
+      var city = (data[i][4] || "").toString().trim();
+      if (area) {
+        map[area] = city;
+      }
+    }
+    
+    try {
+      _setCachedData(cacheKey, map, 1800); // Cache for 30 minutes
+    } catch (cacheErr) {
+      Logger.log("Cache set error for area_city_map: " + cacheErr);
+    }
+    
+    return map;
+  } catch (e) {
+    _logError("_getAreaCityMap", e, "");
+    return {};
+  }
+}
+
+// Fetch active products list, compare it to columns in pricing sheet, and append new products as columns
+function _syncProductColumns(pricingSheet, clientType) {
+  clientType = (clientType || "").toString().trim().toUpperCase();
+  try {
+    var prodCacheKey = "active_products_v4_" + clientType;
+    var activeProducts = _getCachedData(prodCacheKey);
+    if (!activeProducts) {
+      activeProducts = [];
+      var setupSs = _getSetupSpreadsheet();
+      var prodSheetName = (clientType === "OUTSTATION") ? "productsOutstation" : "productsLocal";
+      var prodSheet = setupSs.getSheetByName(prodSheetName);
+      if (prodSheet) {
+        var lastRow = prodSheet.getLastRow();
+        if (lastRow > 0) {
+          var values = prodSheet.getRange(1, 1, lastRow, 1).getValues();
+          for (var i = 0; i < values.length; i++) {
+            var val = (values[i][0] || "").toString().trim();
+            if (val && val.toLowerCase() !== "product name" && val.toLowerCase() !== "products") {
+              activeProducts.push(val);
+            }
+          }
+        }
+      }
+      _setCachedData(prodCacheKey, activeProducts, 900); // 15 mins cache
+    }
+    
+    var lastCol = pricingSheet.getLastColumn();
+    var headers = [];
+    if (lastCol > 0) {
+      headers = pricingSheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return (h || "").toString().trim();
+      });
+    } else {
+      pricingSheet.appendRow(["PARTY NAME"]);
+      headers = ["PARTY NAME"];
+      lastCol = 1;
+    }
+    
+    var newProducts = [];
+    for (var i = 0; i < activeProducts.length; i++) {
+      var prod = activeProducts[i];
+      if (headers.indexOf(prod) === -1) {
+        newProducts.push(prod);
+      }
+    }
+    
+    if (newProducts.length > 0) {
+      pricingSheet.getRange(1, lastCol + 1, 1, newProducts.length).setValues([newProducts]);
+      var headersCacheKey = "pricing_headers_" + clientType;
+      _clearCacheKey(headersCacheKey);
+    }
+    return activeProducts;
+  } catch (err) {
+    Logger.log("Error in _syncProductColumns: " + err);
+    return [];
+  }
+}
+
+
