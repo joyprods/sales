@@ -713,6 +713,12 @@ function updateClient(originalPartyName, data) {
 
     sheet.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
     
+    try {
+      _logError("DEBUG_updateClient", "targetRowIndex=" + targetRowIndex + ", originalPartyName=" + originalPartyName + ", newPartyName=" + data.partyName + ", updatedRowPartyName=" + updatedRow[partyNameIdx], "HeaderLength=" + headers.length + ", RowLength=" + updatedRow.length);
+    } catch (logErr) {
+      Logger.log("Debug log error: " + logErr);
+    }
+    
     // Clear formula cells to let ARRAYFORMULAs run
     try {
       _clearFormulaCells(sheet, targetRowIndex, headers);
@@ -731,6 +737,13 @@ function updateClient(originalPartyName, data) {
         clientType = (rawCity === "MUMBAI") ? "LOCAL" : "OUTSTATION";
       } else {
         clientType = _getClientTypeFromArea(data.area);
+      }
+      if (originalPartyName && data.partyName && originalPartyName.trim().toUpperCase() !== data.partyName.trim().toUpperCase()) {
+        try {
+          _renameClientInPricingSheets(originalPartyName, data.partyName);
+        } catch (renameErr) {
+          _logError("updateClientRenamePricing", renameErr, originalPartyName + " -> " + data.partyName);
+        }
       }
       syncClientToPricingSheet(data.partyName, clientType);
     } catch (syncErr) {
@@ -810,6 +823,41 @@ function syncClientToPricingSheet(partyName, localOrOutstation) {
   } catch (e) {
     _logError("syncClientToPricingSheet", e, partyName + " (" + localOrOutstation + ")");
     return false;
+  }
+}
+
+// Renames a client row header in both Local and Outstation pricing sheets if the client's Party Name was edited
+function _renameClientInPricingSheets(oldName, newName) {
+  try {
+    var config = _getSetupConfig();
+    var clientSs = SpreadsheetApp.openById(config.productPriceSpreadsheetId);
+    var sheets = ["Local Product Prices", "Outstation Product Prices"];
+    
+    for (var s = 0; s < sheets.length; s++) {
+      var sheet = clientSs.getSheetByName(sheets[s]);
+      if (sheet) {
+        var lastRow = sheet.getLastRow();
+        if (lastRow > 1) {
+          var namesRange = sheet.getRange(2, 1, lastRow - 1, 1);
+          var names = namesRange.getValues();
+          var updated = false;
+          for (var i = 0; i < names.length; i++) {
+            if (names[i][0] && names[i][0].toString().trim().toUpperCase() === oldName.trim().toUpperCase()) {
+              sheet.getRange(i + 2, 1).setValue(newName);
+              updated = true;
+            }
+          }
+          if (updated) {
+            _clearCacheKey("pricing_clients_LOCAL");
+            _clearCacheKey("pricing_clients_OUTSTATION");
+            _clearCacheKey("all_pricing_data_v3_LOCAL");
+            _clearCacheKey("all_pricing_data_v3_OUTSTATION");
+          }
+        }
+      }
+    }
+  } catch (err) {
+    _logError("renameClientInPricingSheets", err, oldName + " -> " + newName);
   }
 }
 
