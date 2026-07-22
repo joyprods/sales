@@ -20,7 +20,7 @@ function doPost(e) {
     
     // Validate session token for other actions
     var sessionId = payload.sessionId;
-    if (type !== "syncAllClients" && type !== "optimizeAllSheets" && type !== "dumpClientListHeaders" && !isValidSession(sessionId)) {
+    if (type !== "syncAllClients" && type !== "optimizeAllSheets" && type !== "dumpClientListHeaders" && type !== "debugCell" && type !== "dumpLogs" && !isValidSession(sessionId)) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, code: "NO_SESSION" }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -87,6 +87,30 @@ function doPost(e) {
           lastCol: lastCol,
           rows: rows
         };
+      }
+    } else if (type === "debugCell") {
+      var config = _getSetupConfig();
+      var ss = SpreadsheetApp.openById(config.clientSpreadsheetId);
+      var sheet = ss.getSheetByName(config.clientSheetName);
+      var range = sheet.getRange(1686, 6); // Column F (PARTY NAME) is column 6
+      result = {
+        ok: true,
+        value: range.getValue(),
+        formula: range.getFormula(),
+        headers: sheet.getRange(_getHeaderRowIndex(sheet), 1, 1, 15).getValues()[0].map(function(h) {
+          return (h || "").toString();
+        })
+      };
+    } else if (type === "dumpLogs") {
+      var ss = _getSetupSpreadsheet();
+      var sheet = ss.getSheetByName("Logs");
+      if (!sheet) {
+        result = { ok: false, message: "Logs sheet not found" };
+      } else {
+        var lastRow = sheet.getLastRow();
+        var numRows = Math.min(20, lastRow);
+        var rows = lastRow > 0 ? sheet.getRange(Math.max(1, lastRow - numRows + 1), 1, numRows, 5).getValues() : [];
+        result = { ok: true, logs: rows };
       }
     } else {
       result = { ok: false, code: "UNKNOWN_TYPE" };

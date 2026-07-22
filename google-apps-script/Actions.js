@@ -238,7 +238,11 @@ function createClient(data) {
   
   // If a new area and city are provided, ensure they are registered in the Data Sheet
   if (data.area && data.city) {
-    addNewAreaToDataSheet(data.area, data.city);
+    try {
+      addNewAreaToDataSheet(data.area, data.city);
+    } catch (areaErr) {
+      _logError("createClientArea", areaErr, data.area + " | " + data.city);
+    }
   }
   
   // Dynamically sync client name to the correct pricing matrix sheet on creation
@@ -727,7 +731,11 @@ function updateClient(originalPartyName, data) {
     }
 
     if (data.area && data.city) {
-      addNewAreaToDataSheet(data.area, data.city);
+      try {
+        addNewAreaToDataSheet(data.area, data.city);
+      } catch (areaErr) {
+        _logError("updateClientArea", areaErr, data.area + " | " + data.city);
+      }
     }
 
     var clientType = "LOCAL";
@@ -1572,13 +1580,12 @@ function addNewAreaToDataSheet(areaName, cityName) {
       }
     }
     
-    // Append to Data Sheet: Column A (Area) and Column E (City)
-    // We construct a row of length 5: [area, "COURIER", "COURIER", "COURIER", city]
+    // We construct a row of length 5: [area, "", "", "", city]
     var newRow = [
       areaName.toUpperCase().trim(),
-      "COURIER",
-      "COURIER",
-      "COURIER",
+      "",
+      "",
+      "",
       cityName.toUpperCase().trim()
     ];
     sheet.appendRow(newRow);
