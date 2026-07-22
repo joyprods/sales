@@ -9,15 +9,15 @@ import SubmittingModal from '../vendor-form/SubmittingModal';
 // ── Dropdown Constants from Sheet ───────────────────────────────────────────
 const CLIENT_CATEGORIES = [
   '5 star Hotels',
-  'Restaurants & Cafes - Local',
-  'Restaurants & Cafes - Outstation',
+  'Restaurants & Cafes',
+  'Direct B2C',
   'HORECA Distributors',
   'Retail Distributors',
-  'Chain Outlets - Multiple Cities',
+  'Chain Outlets',
   'Caterers & Banquets',
   'Private Label',
   'Corporates',
-  'Chain Outlets - Local',
+  'Retail Outlets',
   'Others'
 ];
 
