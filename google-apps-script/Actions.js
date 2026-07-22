@@ -717,12 +717,6 @@ function updateClient(originalPartyName, data) {
 
     sheet.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
     
-    try {
-      _logError("DEBUG_updateClient", "targetRowIndex=" + targetRowIndex + ", originalPartyName=" + originalPartyName + ", newPartyName=" + data.partyName + ", updatedRowPartyName=" + updatedRow[partyNameIdx], "HeaderLength=" + headers.length + ", RowLength=" + updatedRow.length);
-    } catch (logErr) {
-      Logger.log("Debug log error: " + logErr);
-    }
-    
     // Clear formula cells to let ARRAYFORMULAs run
     try {
       _clearFormulaCells(sheet, targetRowIndex, headers);
