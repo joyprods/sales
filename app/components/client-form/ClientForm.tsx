@@ -114,6 +114,7 @@ export default function ClientForm({
   const [originalAreas, setOriginalAreas] = useState<string[]>([]);
   const [categoriesList, setCategoriesList] = useState<string[]>(CLIENT_CATEGORIES);
   const [citiesList, setCitiesList] = useState<string[]>([]);
+  const [hasGst, setHasGst] = useState<'Yes' | 'No'>('Yes');
   
   // Load dynamic areas, cities, and categories on mount
   useEffect(() => {
@@ -170,6 +171,7 @@ export default function ClientForm({
   useEffect(() => {
     if (mode === 'edit' && initialData) {
       setForm(initialData);
+      setHasGst(initialData.gstNo ? 'Yes' : 'No');
     }
   }, [mode, initialData]);
 
@@ -181,6 +183,7 @@ export default function ClientForm({
         const parsed = JSON.parse(savedDraft);
         if (parsed && typeof parsed === 'object') {
           setForm(parsed);
+          setHasGst(parsed.gstNo ? 'Yes' : 'No');
           // Set to final step so they can click submit easily
           setCurrentStep(3);
           localStorage.removeItem('draft_client_form');
@@ -261,7 +264,7 @@ export default function ClientForm({
 
   const validateGst = (val: string) => {
     if (!val) {
-      if (form.class === 'PB') {
+      if (form.class === 'PB' && hasGst === 'Yes') {
         setError('gstNo', 'GSTIN is required for PB Class');
       } else {
         clearError('gstNo');
@@ -369,9 +372,11 @@ export default function ClientForm({
       }
       
       if (form.class === 'PB') {
-        if (!form.gstNo) errors.gstNo = 'GST Number is required for PB Class';
-        else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(form.gstNo)) {
-          errors.gstNo = 'Invalid GSTIN structure';
+        if (hasGst === 'Yes') {
+          if (!form.gstNo) errors.gstNo = 'GST Number is required for PB Class';
+          else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(form.gstNo)) {
+            errors.gstNo = 'Invalid GSTIN structure';
+          }
         }
       } else {
         if (form.gstNo && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(form.gstNo)) {
@@ -890,30 +895,92 @@ export default function ClientForm({
                   label='Class'
                   onChange={(val) => {
                     setForm((p) => ({ ...p, class: val }));
+                    if (val === 'PB') {
+                      setHasGst('Yes');
+                    }
                     clearError('class');
                   }}
                 />
                 <FieldError field='class' />
               </div>
 
-              {/* GSTIN field is always visible, mandatory only for PB Class */}
-              <div className='form-group'>
-                <label className='label font-semibold text-primary'>GST Number {form.class === 'PB' ? '*' : ''}</label>
-                <input
-                  name='gstNo'
-                  maxLength={15}
-                  placeholder='Enter 15-digit GSTIN (e.g. 22AAAAA0000A1Z5)'
-                  className={`input border-primary/40 ${fieldErrors.gstNo ? 'border-destructive ring-2 ring-destructive/20' : ''}`}
-                  value={form.gstNo}
-                  onChange={(e) => {
-                    const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    setForm((p) => ({ ...p, gstNo: clean }));
-                    clearError('gstNo');
-                  }}
-                  onBlur={() => validateGst(form.gstNo)}
-                />
-                <FieldError field='gstNo' />
-              </div>
+              {/* GSTIN field is conditional, mandatory only for PB Class when Yes is selected */}
+              {form.class === 'PB' ? (
+                <>
+                  <div className='form-group flex flex-col justify-center'>
+                    <label className='label font-semibold text-primary'>GST Number Available? *</label>
+                    <div className='flex gap-6 mt-2 h-10 items-center'>
+                      <label className='flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900'>
+                        <input
+                          type='radio'
+                          name='hasGst'
+                          value='Yes'
+                          checked={hasGst === 'Yes'}
+                          onChange={() => {
+                            setHasGst('Yes');
+                            clearError('gstNo');
+                          }}
+                          className='w-4 h-4 text-primary border-slate-300 focus:ring-primary focus:ring-2 focus:ring-offset-2'
+                        />
+                        <span>Yes</span>
+                      </label>
+                      <label className='flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900'>
+                        <input
+                          type='radio'
+                          name='hasGst'
+                          value='No'
+                          checked={hasGst === 'No'}
+                          onChange={() => {
+                            setHasGst('No');
+                            setForm((p) => ({ ...p, gstNo: '' }));
+                            clearError('gstNo');
+                          }}
+                          className='w-4 h-4 text-primary border-slate-300 focus:ring-primary focus:ring-2 focus:ring-offset-2'
+                        />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {hasGst === 'Yes' && (
+                    <div className='form-group'>
+                      <label className='label font-semibold text-primary'>GST Number *</label>
+                      <input
+                        name='gstNo'
+                        maxLength={15}
+                        placeholder='Enter 15-digit GSTIN (e.g. 22AAAAA0000A1Z5)'
+                        className={`input border-primary/40 ${fieldErrors.gstNo ? 'border-destructive ring-2 ring-destructive/20' : ''}`}
+                        value={form.gstNo}
+                        onChange={(e) => {
+                          const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          setForm((p) => ({ ...p, gstNo: clean }));
+                          clearError('gstNo');
+                        }}
+                        onBlur={() => validateGst(form.gstNo)}
+                      />
+                      <FieldError field='gstNo' />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className='form-group'>
+                  <label className='label font-semibold text-primary'>GST Number</label>
+                  <input
+                    name='gstNo'
+                    maxLength={15}
+                    placeholder='Enter 15-digit GSTIN (e.g. 22AAAAA0000A1Z5)'
+                    className={`input border-primary/40 ${fieldErrors.gstNo ? 'border-destructive ring-2 ring-destructive/20' : ''}`}
+                    value={form.gstNo}
+                    onChange={(e) => {
+                      const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                      setForm((p) => ({ ...p, gstNo: clean }));
+                      clearError('gstNo');
+                    }}
+                    onBlur={() => validateGst(form.gstNo)}
+                  />
+                  <FieldError field='gstNo' />
+                </div>
+              )}
 
               <div className='form-group md:col-span-2'>
                 <label className='label'>Billing Address *</label>
