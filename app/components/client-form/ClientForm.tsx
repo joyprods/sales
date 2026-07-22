@@ -920,7 +920,7 @@ export default function ClientForm({
                             setHasGst('Yes');
                             clearError('gstNo');
                           }}
-                          className='w-4 h-4 text-primary border-slate-300 focus:ring-primary focus:ring-2 focus:ring-offset-2'
+                          className='w-4 h-4 accent-primary cursor-pointer'
                         />
                         <span>Yes</span>
                       </label>
@@ -935,7 +935,7 @@ export default function ClientForm({
                             setForm((p) => ({ ...p, gstNo: '' }));
                             clearError('gstNo');
                           }}
-                          className='w-4 h-4 text-primary border-slate-300 focus:ring-primary focus:ring-2 focus:ring-offset-2'
+                          className='w-4 h-4 accent-primary cursor-pointer'
                         />
                         <span>No</span>
                       </label>
