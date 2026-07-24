@@ -57,7 +57,7 @@ const VirtualRow = memo(function VirtualRow({
       ) : (
         <span className='w-[22px] shrink-0' />
       )}
-      <span className='truncate'>{option}</span>
+      <span className='truncate' title={option}>{option}</span>
     </div>
   );
 });
@@ -142,12 +142,18 @@ export default function SearchableSelect({
     const openUpward =
       spaceBelow < LIST_HEIGHT + 60 && rect.top > LIST_HEIGHT + 60;
 
+    const alignRight = rect.left + rect.width / 2 > window.innerWidth / 2;
+
     setDropdownStyle({
       position: 'fixed',
-      left: rect.left,
-      width: rect.width,
-      minWidth: 260,
-      maxWidth: 420,
+      width: 'max-content',
+      minWidth: rect.width,
+      maxWidth: alignRight 
+        ? Math.min(600, rect.right - 16) 
+        : Math.min(600, window.innerWidth - rect.left - 16),
+      ...(alignRight
+        ? { right: window.innerWidth - rect.right }
+        : { left: rect.left }),
       ...(openUpward
         ? { bottom: window.innerHeight - rect.top + 6 }
         : { top: rect.bottom + 6 }),
@@ -305,6 +311,7 @@ export default function SearchableSelect({
         onClick={() => !disabled && !loading && setOpen((p) => !p)}
       >
         <span
+          title={value || placeholder}
           className={`truncate text-[16px] tracking-tight transition-colors ${
             !hasValue || loading ? 'text-slate-400' : 'text-slate-900'
           }`}
