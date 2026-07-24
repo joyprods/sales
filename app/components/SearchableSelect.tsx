@@ -312,7 +312,7 @@ export default function SearchableSelect({
       >
         <span
           title={value || placeholder}
-          className={`whitespace-normal break-words pr-4 text-[16px] tracking-tight transition-colors ${
+          className={`whitespace-normal break-words pr-4 text-[14px] tracking-tight transition-colors ${
             !hasValue || loading ? 'text-slate-400' : 'text-slate-900'
           }`}
         >

@@ -268,9 +268,9 @@ export default function ProductPricesForm({
           <h2 className='heading-md'>Select Client to Set Prices</h2>
         </div>
 
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        <div className='grid grid-cols-1 md:grid-cols-5 gap-6'>
           {/* Client Type Toggle */}
-          <div className='form-group'>
+          <div className='form-group md:col-span-2'>
             <label className='label'>Client Category</label>
             <div className='grid grid-cols-2 gap-3 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-border/40'>
               <button
@@ -301,7 +301,7 @@ export default function ProductPricesForm({
           </div>
 
           {/* Searchable Client Selector */}
-          <div className='form-group'>
+          <div className='form-group md:col-span-3'>
             <label className='label'>Client Name *</label>
             {isLoadingAll ? (
               <div className='h-11 flex items-center justify-center border border-input rounded-lg bg-background text-sm text-muted-foreground gap-2 animate-pulse'>
