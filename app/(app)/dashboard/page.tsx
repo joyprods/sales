@@ -204,7 +204,7 @@ export default function DashboardPage() {
             <p className='text-sm text-muted-foreground'>
               Choose a client from the master database to load their current details and start editing.
             </p>
-            <div className='max-w-md'>
+            <div className='w-full'>
               {isLoadingList ? (
                 <div className='h-11 flex items-center justify-center border border-input rounded-lg bg-slate-50 dark:bg-slate-900 text-sm text-muted-foreground gap-2 animate-pulse'>
                   <span className='h-4 w-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin' />
