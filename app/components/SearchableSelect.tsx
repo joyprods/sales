@@ -305,14 +305,14 @@ export default function SearchableSelect({
     <div className='relative w-full'>
       <div
         ref={triggerRef}
-        className={`input h-12.5 flex items-center justify-between cursor-pointer transition-all duration-200 border border-slate-200 ${
+        className={`input min-h-[50px] py-2 flex items-center justify-between cursor-pointer transition-all duration-200 border border-slate-200 ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary/50'
         } ${open ? 'ring-2 ring-primary/20 border-primary bg-white' : 'bg-slate-50/30'}`}
         onClick={() => !disabled && !loading && setOpen((p) => !p)}
       >
         <span
           title={value || placeholder}
-          className={`truncate text-[16px] tracking-tight transition-colors ${
+          className={`whitespace-normal break-words pr-4 text-[16px] tracking-tight transition-colors ${
             !hasValue || loading ? 'text-slate-400' : 'text-slate-900'
           }`}
         >
